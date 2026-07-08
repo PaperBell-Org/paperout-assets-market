@@ -29,11 +29,10 @@ jobs:
       - name: Validate invariants + index (strict)
         run: node scripts/validate.mjs
 
-      - name: Install pandoc + pandoc-crossref
-        run: bash .github/scripts/install-pandoc.sh
-
-      - name: Build-test recipes (fingerprint + golden)
-        run: node scripts/build-recipe.mjs --all
+      # Golden-fingerprint regression and full PDF/DOCX builds run on PRs
+      # (validate.yml / build-test.yml), where the pandoc toolchain is installed.
+      # The release job stays Node + zip only, so publishing never depends on a
+      # pandoc version matching the goldens.
 
       - name: Pack bundles
         run: node scripts/pack-bundle.mjs --tag "${GITHUB_REF#refs/tags/}"
