@@ -4,7 +4,8 @@
 set -euo pipefail
 
 PANDOC_VERSION="${PANDOC_VERSION:-3.8.2}"
-CROSSREF_VERSION="${CROSSREF_VERSION:-0.3.22.0}"
+# pandoc-crossref release tags carry a letter suffix; v0.3.22b targets Pandoc 3.8.x.
+CROSSREF_VERSION="${CROSSREF_VERSION:-0.3.22b}"
 
 echo "── installing pandoc ${PANDOC_VERSION} ──"
 curl -fsSL "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-1-amd64.deb" -o /tmp/pandoc.deb
