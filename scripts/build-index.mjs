@@ -12,7 +12,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkDefaults } from './lib/invariants.mjs';
 import { parseDefaultsFile } from './lib/parse-defaults.mjs';
 import { sha256File } from './lib/hash.mjs';
-import { fileVersion, isSemver, normalizeSemver } from './lib/version.mjs';
+import { isSemver } from './lib/version.mjs';
 import { loadRecipeManifests, loadAssetDocs, loadCslStyles, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -61,7 +61,7 @@ function leafAsset(rel, type, tag, docs) {
   return {
     id,
     type,
-    version: fileVersion(rel, tag),
+    version: doc.version ?? '1.0.0', // the asset's own semver, independent of the release tag
     title: bilingual(doc.title),
     description: bilingual(doc.description),
     sourcePath: id,
@@ -126,11 +126,11 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
       extraFiles.push(fileRef(efRel, tag));
     }
 
-    const version = manifest?.version ?? fileVersion(rel, tag);
+    const version = manifest?.version ?? '1.0.0';
     const asset = {
       id,
       type: 'recipe',
-      version: normalizeSemver(version, version),
+      version,
       title: manifest?.title ? bilingual(manifest.title) : { en: id, zh: '' },
       description: isFallback
         ? { en: 'Default preset used when a note names no template.', zh: '笔记未指定模板时使用的默认预设。' }
@@ -165,6 +165,7 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     if (!a.description || !a.description.en) {
       (strict ? errors : warnings).push(`asset "${a.id}" has no description — add it to catalog/assets.yaml`);
     }
+    if (!isSemver(a.version)) errors.push(`asset "${a.id}" version "${a.version}" is not valid semver`);
   }
   // every assets.yaml entry must point at a real file
   for (const key of Object.keys(docs)) {

@@ -1,343 +1,488 @@
 filters/beamer.lua:
+  version: 1.0.0
   title:
-    en: 'Beamer Div environments'
-    zh: 'Beamer 块转换'
+    en: Beamer Div environments
+    zh: Beamer 块转换
   description:
-    en: 'Converts Divs (thm, alertblock, hidden) and ad-rmk code blocks into Beamer block/alertblock environments for slides.'
-    zh: '把 Div（thm/alertblock/hidden）和 ad-rmk 代码块转成 Beamer 的 block/alertblock 幻灯片环境。'
+    en: Converts Divs (thm, alertblock, hidden) and ad-rmk code blocks into Beamer
+      block/alertblock environments for slides.
+    zh: 把 Div（thm/alertblock/hidden）和 ad-rmk 代码块转成 Beamer 的 block/alertblock 幻灯片环境。
 filters/beamer_callout.lua:
+  version: 1.0.0
   title:
-    en: 'Beamer callout blocks'
-    zh: '标注转 Beamer 块'
+    en: Beamer callout blocks
+    zh: 标注转 Beamer 块
   description:
-    en: 'Turns Obsidian blockquote callouts ([!rmk]/[!ex]/…) into Beamer myblock/myalertblock/exampleblock environments.'
-    zh: '把 Obsidian 标注（[!rmk]/[!ex] 等）转成 Beamer 的 myblock/myalertblock/exampleblock 环境。'
+    en: Turns Obsidian blockquote callouts ([!rmk]/[!ex]/…) into Beamer
+      myblock/myalertblock/exampleblock environments.
+    zh: 把 Obsidian 标注（[!rmk]/[!ex] 等）转成 Beamer 的 myblock/myalertblock/exampleblock
+      环境。
 filters/block_ids.lua:
+  version: 1.0.0
   title:
-    en: 'Strip Obsidian block IDs'
-    zh: '剥块 ID'
+    en: Strip Obsidian block IDs
+    zh: 剥块 ID
   description:
-    en: 'Strips trailing Obsidian block IDs (^blockid) from paragraphs so pandoc does not print them, and (during the line-number pass) inserts paragraph-start/end \linelabel so whole-paragraph quotes can carry line numbers.'
-    zh: '剥掉段末 Obsidian 块 ID (^blockid)，供回复信整段引用；抓行号那趟另在段首尾插入 \linelabel。'
+    en: Strips trailing Obsidian block IDs (^blockid) from paragraphs so pandoc does
+      not print them, and (during the line-number pass) inserts
+      paragraph-start/end \linelabel so whole-paragraph quotes can carry line
+      numbers.
+    zh: 剥掉段末 Obsidian 块 ID (^blockid)，供回复信整段引用；抓行号那趟另在段首尾插入 \linelabel。
 filters/callout.lua:
+  version: 1.0.0
   title:
-    en: 'Obsidian callouts to LaTeX'
-    zh: '标注转 LaTeX'
+    en: Obsidian callouts to LaTeX
+    zh: 标注转 LaTeX
   description:
-    en: 'Converts Obsidian blockquote callouts into LaTeX tcolorbox boxes or theorem-like environments (definition/theorem/proof/…), using the block ID as the \label.'
-    zh: '把 Obsidian 标注转成 LaTeX 的 tcolorbox 彩框或定理类环境（definition/theorem/proof 等），并用块 ID 作 \label。'
+    en: Converts Obsidian blockquote callouts into LaTeX tcolorbox boxes or
+      theorem-like environments (definition/theorem/proof/…), using the block ID
+      as the \label.
+    zh: 把 Obsidian 标注转成 LaTeX 的 tcolorbox 彩框或定理类环境（definition/theorem/proof 等），并用块
+      ID 作 \label。
 filters/cjk_format.lua:
+  version: 1.0.0
   title:
-    en: 'CJK/Latin mixed typesetting'
-    zh: '中英混排排版'
+    en: CJK/Latin mixed typesetting
+    zh: 中英混排排版
   description:
-    en: 'Auto-typesets mixed Chinese/English text, inserting spacing between Han and alphanumerics and converting half/full-width punctuation by context (skipping code and math).'
-    zh: '中英文混排自动排版：汉字与字母数字间补空格，按语境在半角/全角标点间转换（跳过代码与公式）。'
+    en: Auto-typesets mixed Chinese/English text, inserting spacing between Han and
+      alphanumerics and converting half/full-width punctuation by context
+      (skipping code and math).
+    zh: 中英文混排自动排版：汉字与字母数字间补空格，按语境在半角/全角标点间转换（跳过代码与公式）。
 filters/codeblock.lua:
+  version: 1.0.0
   title:
-    en: 'Obsidian plugin code blocks'
-    zh: '插件代码块转换'
+    en: Obsidian plugin code blocks
+    zh: 插件代码块转换
   description:
-    en: 'Converts Obsidian plugin fenced blocks (tikz, pseudo) into raw LaTeX, yielding TikZ figures and algorithm pseudocode.'
-    zh: '把 Obsidian 插件代码块（tikz、pseudo）转成裸 LaTeX（TikZ 图、algorithm 伪代码）。'
+    en: Converts Obsidian plugin fenced blocks (tikz, pseudo) into raw LaTeX,
+      yielding TikZ figures and algorithm pseudocode.
+    zh: 把 Obsidian 插件代码块（tikz、pseudo）转成裸 LaTeX（TikZ 图、algorithm 伪代码）。
 filters/cover_letter.lua:
+  version: 1.0.0
   title:
-    en: 'Cover-letter metadata injection'
-    zh: '投稿信元数据'
+    en: Cover-letter metadata injection
+    zh: 投稿信元数据
   description:
-    en: 'Reads the sibling metadata.json to fill PaperTitle/JournalName/AuthorName/AuthorEmail for cover_letter.latex, and substitutes {{key}} placeholders in the body.'
-    zh: '读同目录 metadata.json → PaperTitle/JournalName/AuthorName/AuthorEmail，并支持正文 {{key}} 占位符替换。'
+    en: Reads the sibling metadata.json to fill
+      PaperTitle/JournalName/AuthorName/AuthorEmail for cover_letter.latex, and
+      substitutes {{key}} placeholders in the body.
+    zh: 读同目录 metadata.json → PaperTitle/JournalName/AuthorName/AuthorEmail，并支持正文
+      {{key}} 占位符替换。
 filters/demo-docx.lua:
+  version: 1.0.0
   title:
-    en: 'Demo docx front matter'
-    zh: '展示版 docx 抬头'
+    en: Demo docx front matter
+    zh: 展示版 docx 抬头
   description:
-    en: 'Inserts the YAML title, abstract and keywords at the top of a Word export with the reference-doc custom styles (a demo build that skips authors/affiliations).'
-    zh: '把 YAML 的标题、摘要、关键词按 Word 模板样式插入正文开头（展示版，跳过作者与机构）。'
+    en: Inserts the YAML title, abstract and keywords at the top of a Word export
+      with the reference-doc custom styles (a demo build that skips
+      authors/affiliations).
+    zh: 把 YAML 的标题、摘要、关键词按 Word 模板样式插入正文开头（展示版，跳过作者与机构）。
 filters/div.lua:
+  version: 1.0.0
   title:
-    en: 'Hidden Divs'
-    zh: '隐藏 Div'
+    en: Hidden Divs
+    zh: 隐藏 Div
   description:
-    en: 'Drops Divs with class hidden and turns %% … %% inline-comment spans into hidden Divs.'
-    zh: '删除 class 为 hidden 的 Div，并把 %% … %% 行内注释转成 hidden Div。'
+    en: Drops Divs with class hidden and turns %% … %% inline-comment spans into
+      hidden Divs.
+    zh: 删除 class 为 hidden 的 Div，并把 %% … %% 行内注释转成 hidden Div。
 filters/figures-at-end.lua:
+  version: 1.0.0
   title:
-    en: 'Figures/tables at end'
-    zh: '图表后置'
+    en: Figures/tables at end
+    zh: 图表后置
   description:
-    en: 'When figures-at-end / tables-at-end metadata is set, moves all figures and/or tables to the document end under Figures/Tables headers, preserving captions and cross-references.'
-    zh: '按 figures-at-end/tables-at-end 开关，把正文图、表统一移到文末的 Figures/Tables 标题下，并尽量保留图题表题与交叉引用。'
+    en: When figures-at-end / tables-at-end metadata is set, moves all figures
+      and/or tables to the document end under Figures/Tables headers, preserving
+      captions and cross-references.
+    zh: 按 figures-at-end/tables-at-end 开关，把正文图、表统一移到文末的 Figures/Tables
+      标题下，并尽量保留图题表题与交叉引用。
 filters/fullwidth_tables.lua:
+  version: 1.0.0
   title:
-    en: 'Full-width docx tables'
-    zh: 'docx 表格满宽'
+    en: Full-width docx tables
+    zh: docx 表格满宽
   description:
-    en: 'Normalizes each table column widths so they sum to 100% of the text width for docx export, pairing with the reference-doc three-line Table style.'
-    zh: '导出 docx 时把每个表格的列宽归一到版心 100%，配合 reference-doc 的 Table 三线表样式。'
+    en: Normalizes each table column widths so they sum to 100% of the text width
+      for docx export, pairing with the reference-doc three-line Table style.
+    zh: 导出 docx 时把每个表格的列宽归一到版心 100%，配合 reference-doc 的 Table 三线表样式。
 filters/highlight.lua:
+  version: 1.0.0
   title:
-    en: '==highlight== syntax'
-    zh: '高亮语法'
+    en: ==highlight== syntax
+    zh: 高亮语法
   description:
-    en: 'Adds ==text== highlight syntax, wrapping the enclosed inlines in a Span with class mark.'
-    zh: '支持 ==文本== 高亮语法，把其中内容包成 class 为 mark 的 Span。'
+    en: Adds ==text== highlight syntax, wrapping the enclosed inlines in a Span with
+      class mark.
+    zh: 支持 ==文本== 高亮语法，把其中内容包成 class 为 mark 的 Span。
 filters/image.lua:
+  version: 1.0.0
   title:
-    en: 'Obsidian image processing'
-    zh: '图片处理'
+    en: Obsidian image processing
+    zh: 图片处理
   description:
-    en: 'Processes images: strips the Obsidian | alias, parses inline {attributes} in the caption (id/width), and repairs captions for pandoc-crossref figures/subplots.'
-    zh: '处理图片：去掉 Obsidian 的 |别名，解析题注里的行内 {属性}（如 #fig 标签/宽度），并修复 pandoc-crossref 图/子图的题注。'
+    en: "Processes images: strips the Obsidian | alias, parses inline {attributes}
+      in the caption (id/width), and repairs captions for pandoc-crossref
+      figures/subplots."
+    zh: "处理图片：去掉 Obsidian 的 |别名，解析题注里的行内 {属性}（如 #fig 标签/宽度），并修复 pandoc-crossref
+      图/子图的题注。"
 filters/latex-div.lua:
+  version: 1.0.0
   title:
-    en: 'latex-div (vendored, inert)'
-    zh: 'latex-div（停用）'
+    en: latex-div (vendored, inert)
+    zh: latex-div（停用）
   description:
-    en: 'Vendored public-domain R Markdown filter turning Divs with a latex attribute into LaTeX environments; currently inert here as it depends on the unset RMARKDOWN_LUA_SHARED env var.'
-    zh: '沿用自 R Markdown 的公有领域 filter，把带 latex 属性的 Div 转成 LaTeX 环境；因依赖未设置的 RMARKDOWN_LUA_SHARED 环境变量，本项目中当前不生效。'
+    en: Vendored public-domain R Markdown filter turning Divs with a latex attribute
+      into LaTeX environments; currently inert here as it depends on the unset
+      RMARKDOWN_LUA_SHARED env var.
+    zh: 沿用自 R Markdown 的公有领域 filter，把带 latex 属性的 Div 转成 LaTeX 环境；因依赖未设置的
+      RMARKDOWN_LUA_SHARED 环境变量，本项目中当前不生效。
 filters/lineno-docx.lua:
+  version: 1.0.0
   title:
-    en: 'Word line numbers'
-    zh: 'Word 行号'
+    en: Word line numbers
+    zh: Word 行号
   description:
-    en: 'When lineno: true, injects an OOXML section break so the Word export shows per-page line numbers (docx only; PDF uses LaTeX lineno).'
-    zh: '当 lineno: true 时注入 OOXML 分节符，让 Word 导出每页显示行号（仅 docx；PDF 靠 LaTeX 的 lineno 包）。'
+    en: "When lineno: true, injects an OOXML section break so the Word export shows
+      per-page line numbers (docx only; PDF uses LaTeX lineno)."
+    zh: "当 lineno: true 时注入 OOXML 分节符，让 Word 导出每页显示行号（仅 docx；PDF 靠 LaTeX 的 lineno
+      包）。"
 filters/lineno_default.lua:
+  version: 1.0.0
   title:
-    en: 'Line numbers on by default'
-    zh: '行号默认开'
+    en: Line numbers on by default
+    zh: 行号默认开
   description:
-    en: 'Turns line numbering on by default (lineno=true) by editing document metadata, while still letting a note frontmatter lineno: false disable it.'
-    zh: '行号默认开启（lineno=true），笔记 frontmatter 写 lineno: false 可关闭。'
+    en: "Turns line numbering on by default (lineno=true) by editing document
+      metadata, while still letting a note frontmatter lineno: false disable
+      it."
+    zh: "行号默认开启（lineno=true），笔记 frontmatter 写 lineno: false 可关闭。"
 filters/link.lua:
+  version: 1.0.0
   title:
-    en: 'Obsidian wikilinks'
-    zh: '维基链接转换'
+    en: Obsidian wikilinks
+    zh: 维基链接转换
   description:
-    en: 'Converts Obsidian wikilinks and external URLs into LaTeX links (\href / \hyperref), handling file, heading and block references, and strips trailing block IDs.'
-    zh: '把 Obsidian 维基链接和外链转成 LaTeX 链接（\href/\hyperref），支持文件/章节/块引用，并去掉行尾块 ID。'
+    en: Converts Obsidian wikilinks and external URLs into LaTeX links (\href /
+      \hyperref), handling file, heading and block references, and strips
+      trailing block IDs.
+    zh: 把 Obsidian 维基链接和外链转成 LaTeX 链接（\href/\hyperref），支持文件/章节/块引用，并去掉行尾块 ID。
 filters/manuscript-docx.lua:
+  version: 1.0.0
   title:
-    en: 'docx title page'
-    zh: 'docx 标题页'
+    en: docx title page
+    zh: docx 标题页
   description:
-    en: 'Builds a left-aligned Word title block from metadata: title, authors with affiliation superscripts, affiliations, corresponding email, abstract and keywords.'
-    zh: '用元数据生成左对齐的 Word 标题区：标题、带机构上标的作者、机构、通讯邮箱、摘要与关键词。'
+    en: "Builds a left-aligned Word title block from metadata: title, authors with
+      affiliation superscripts, affiliations, corresponding email, abstract and
+      keywords."
+    zh: 用元数据生成左对齐的 Word 标题区：标题、带机构上标的作者、机构、通讯邮箱、摘要与关键词。
 filters/manuscript_cite.lua:
+  version: 1.0.0
   title:
-    en: 'Manuscript quote citations'
-    zh: '手稿引文入参考'
+    en: Manuscript quote citations
+    zh: 手稿引文入参考
   description:
-    en: 'Before citeproc, expands hand-pasted ```manuscript quote fences into a Div{.manuscript} parsed with citations, so their [@key] resolve into the one shared bibliography.'
-    zh: '把手贴 ```manuscript 引文块在 citeproc 之前展开成 Div，让块内 [@key] 进同一份参考文献。'
+    en: Before citeproc, expands hand-pasted ```manuscript quote fences into a
+      Div{.manuscript} parsed with citations, so their [@key] resolve into the
+      one shared bibliography.
+    zh: 把手贴 ```manuscript 引文块在 citeproc 之前展开成 Div，让块内 [@key] 进同一份参考文献。
 filters/manuscript_include.lua:
+  version: 1.0.0
   title:
-    en: 'Pull manuscript quotes'
-    zh: '拉取手稿原文'
+    en: Pull manuscript quotes
+    zh: 拉取手稿原文
   description:
-    en: 'A ```manuscript fence writing @id (or ![[scene#…]]) pulls the current text/figures from the manuscript scenes <!--ms:id--> markers, keeping response-letter quotes in sync with real figure/table/line numbers.'
-    zh: '```manuscript 里写 @id → 从手稿 scene 的 <!--ms:id--> 标记片段拉取当前原文（含图/表号、行号）。'
+    en: A ```manuscript fence writing @id (or ![[scene#…]]) pulls the current
+      text/figures from the manuscript scenes <!--ms:id--> markers, keeping
+      response-letter quotes in sync with real figure/table/line numbers.
+    zh: "```manuscript 里写 @id → 从手稿 scene 的 <!--ms:id--> 标记片段拉取当前原文（含图/表号、行号）。"
 filters/manuscript_linelabel.lua:
+  version: 1.0.0
   title:
-    en: 'Manuscript line labels'
-    zh: '手稿行号标签'
+    en: Manuscript line labels
+    zh: 手稿行号标签
   description:
-    en: 'A no-op normally; only in the line-number harvesting pass (mslabels=true) does it convert <!--ms:ID--> markers into lineno \linelabel commands.'
-    zh: '默认 no-op；抓行号那趟把 <!--ms:ID--> 变 \linelabel。'
+    en: A no-op normally; only in the line-number harvesting pass (mslabels=true)
+      does it convert <!--ms:ID--> markers into lineno \linelabel commands.
+    zh: 默认 no-op；抓行号那趟把 <!--ms:ID--> 变 \linelabel。
 filters/math.lua:
+  version: 1.0.0
   title:
-    en: 'Math macro fixes'
-    zh: '公式修正'
+    en: Math macro fixes
+    zh: 公式修正
   description:
-    en: 'Cleans up math, rewriting \mathbb{1} to \mathbbm{1}, unescaping %\label, and stripping \tag{…}% markers.'
-    zh: '修正公式：把 \mathbb{1} 改成 \mathbbm{1}，还原 %\label，并删除 \tag{…}% 标记。'
+    en: Cleans up math, rewriting \mathbb{1} to \mathbbm{1}, unescaping %\label, and
+      stripping \tag{…}% markers.
+    zh: 修正公式：把 \mathbb{1} 改成 \mathbbm{1}，还原 %\label，并删除 \tag{…}% 标记。
 filters/MSCA-tags.lua:
+  version: 1.0.0
   title:
-    en: 'MSCA evaluation tags'
-    zh: 'MSCA 标签'
+    en: MSCA evaluation tags
+    zh: MSCA 标签
   description:
-    en: 'Appends MSCA proposal evaluation tags (\mscatag{…}) to headings whose text matches the known Excellence/Impact/Implementation criteria.'
-    zh: '给匹配到的 MSCA 评审标准标题（Excellence/Impact/Implementation 等）追加 \mscatag{…} 评审标签。'
+    en: Appends MSCA proposal evaluation tags (\mscatag{…}) to headings whose text
+      matches the known Excellence/Impact/Implementation criteria.
+    zh: 给匹配到的 MSCA 评审标准标题（Excellence/Impact/Implementation 等）追加 \mscatag{…} 评审标签。
 filters/mute.lua:
+  version: 1.0.0
   title:
-    en: 'Mute Dataview/blockquotes'
-    zh: '屏蔽元素'
+    en: Mute Dataview/blockquotes
+    zh: 屏蔽元素
   description:
-    en: 'Strips unwanted Obsidian content: Dataview =(...) inline code and code blocks and ^id reference links; note that its BlockQuote handler removes blockquotes.'
-    zh: '屏蔽不想要的 Obsidian 元素：Dataview 的 =(...) 内联代码与代码块、^id 引用链接；其 BlockQuote 处理会移除引用块。'
+    en: "Strips unwanted Obsidian content: Dataview =(...) inline code and code
+      blocks and ^id reference links; note that its BlockQuote handler removes
+      blockquotes."
+    zh: 屏蔽不想要的 Obsidian 元素：Dataview 的 =(...) 内联代码与代码块、^id 引用链接；其 BlockQuote
+      处理会移除引用块。
 filters/nbsp-fix.lua:
+  version: 1.0.0
   title:
-    en: 'Fix NBSP spaces'
-    zh: '修复不换行空格'
+    en: Fix NBSP spaces
+    zh: 修复不换行空格
   description:
-    en: 'Normalizes no-break spaces (U+00A0/U+202F, &nbsp; entities, BOM) to ordinary Pandoc Space nodes and collapses runs of spaces, for clean docx/PDF output.'
-    zh: '归一化不换行空格（U+00A0/U+202F、&nbsp; 实体、BOM）为普通 Space 并折叠连续空格，避免 Word/PDF 残留隐形 NBSP。'
+    en: Normalizes no-break spaces (U+00A0/U+202F, &nbsp; entities, BOM) to ordinary
+      Pandoc Space nodes and collapses runs of spaces, for clean docx/PDF
+      output.
+    zh: 归一化不换行空格（U+00A0/U+202F、&nbsp; 实体、BOM）为普通 Space 并折叠连续空格，避免 Word/PDF 残留隐形
+      NBSP。
 filters/preamble.lua:
+  version: 1.0.0
   title:
-    en: 'Inject LaTeX preamble'
-    zh: '注入前导宏'
+    en: Inject LaTeX preamble
+    zh: 注入前导宏
   description:
-    en: 'Injects a reusable LaTeX preamble (tcolorbox, theorem/algorithm/highlight packages) into header-includes, adds S-prefixed figure/table numbering when supplementary: true, and sources an optional preamble-file.'
-    zh: '向 header-includes 注入可复用 LaTeX 前导（tcolorbox、定理/算法/高亮宏），supplementary: true 时给图表加 S 前缀编号，并可加载 preamble-file 指定的宏包。'
+    en: "Injects a reusable LaTeX preamble (tcolorbox, theorem/algorithm/highlight
+      packages) into header-includes, adds S-prefixed figure/table numbering
+      when supplementary: true, and sources an optional preamble-file."
+    zh: "向 header-includes 注入可复用 LaTeX 前导（tcolorbox、定理/算法/高亮宏），supplementary: true
+      时给图表加 S 前缀编号，并可加载 preamble-file 指定的宏包。"
 filters/promote_figures.lua:
+  version: 1.0.0
   title:
-    en: 'Promote inline figures'
-    zh: '还原行内图'
+    en: Promote inline figures
+    zh: 还原行内图
   description:
-    en: 'Rescues a captioned, id-bearing image that pandoc glued into a paragraph as an inline image, promoting it back to a proper Figure so its caption/label survive and figure numbering stays correct.'
-    zh: '把退化成行内图的 ![cap](img){#fig:x} 还原成正常 Figure，避免图号错位。'
+    en: Rescues a captioned, id-bearing image that pandoc glued into a paragraph as
+      an inline image, promoting it back to a proper Figure so its caption/label
+      survive and figure numbering stays correct.
+    zh: 把退化成行内图的 ![cap](img){#fig:x} 还原成正常 Figure，避免图号错位。
 filters/quotes-i18n.lua:
+  version: 1.0.0
   title:
-    en: 'Bilingual quote localization'
-    zh: '引号本地化'
+    en: Bilingual quote localization
+    zh: 引号本地化
   description:
-    en: 'Localizes quotation marks in mixed Chinese/English text (latex/beamer only): tight full-width quotes in Chinese context, western \textquote curly quotes in English context.'
-    zh: '中英混排引号本地化：中文句用全角贴紧、英文句用西文弯引号。'
+    en: "Localizes quotation marks in mixed Chinese/English text (latex/beamer
+      only): tight full-width quotes in Chinese context, western \\textquote
+      curly quotes in English context."
+    zh: 中英混排引号本地化：中文句用全角贴紧、英文句用西文弯引号。
 filters/responseletter.lua:
+  version: 1.0.0
   title:
-    en: 'Response letter to LaTeX'
-    zh: '回复信转 LaTeX'
+    en: Response letter to LaTeX
+    zh: 回复信转 LaTeX
   description:
-    en: 'Converts Obsidian-flavoured response-letter notes (callouts, **Response:** paragraphs, ```manuscript fences) into responseletter.sty commands (\RC / \AR / \manuscript / \zh) for a XeLaTeX PDF.'
-    zh: 'Obsidian callout → \RC / \AR / \manuscript / \zh。'
+    en: Converts Obsidian-flavoured response-letter notes (callouts, **Response:**
+      paragraphs, ```manuscript fences) into responseletter.sty commands (\RC /
+      \AR / \manuscript / \zh) for a XeLaTeX PDF.
+    zh: Obsidian callout → \RC / \AR / \manuscript / \zh。
 filters/responseletter-docx.lua:
+  version: 1.0.0
   title:
-    en: 'Response letter to docx'
-    zh: '回复信转 docx'
+    en: Response letter to docx
+    zh: 回复信转 docx
   description:
-    en: 'The .docx sibling of responseletter.lua: rebuilds the letter as native Pandoc blocks (reviewer headings + blockquotes, bold Response paragraphs) and strips every Chinese translation and draft-only aid.'
-    zh: 'callout → docx 原生块 + 剔除中文。'
+    en: "The .docx sibling of responseletter.lua: rebuilds the letter as native
+      Pandoc blocks (reviewer headings + blockquotes, bold Response paragraphs)
+      and strips every Chinese translation and draft-only aid."
+    zh: callout → docx 原生块 + 剔除中文。
 filters/shift_headings.lua:
+  version: 1.0.0
   title:
-    en: 'Shift heading levels'
-    zh: '标题降级'
+    en: Shift heading levels
+    zh: 标题降级
   description:
-    en: 'Shifts Markdown heading levels by heading_shift (default 1 when a title is set) to avoid a duplicate H1, dropping headings that fall to level 0.'
-    zh: '按 heading_shift（设了 title 时默认 1）整体降低 Markdown 标题级别，避免与标题重复的 H1，降到 0 级的标题被删除。'
+    en: Shifts Markdown heading levels by heading_shift (default 1 when a title is
+      set) to avoid a duplicate H1, dropping headings that fall to level 0.
+    zh: 按 heading_shift（设了 title 时默认 1）整体降低 Markdown 标题级别，避免与标题重复的 H1，降到 0 级的标题被删除。
 filters/xlsx_table.lua:
+  version: 1.0.0
   title:
-    en: 'xlsx to booktabs table'
-    zh: 'xlsx 转三线表'
+    en: xlsx to booktabs table
+    zh: xlsx 转三线表
   description:
-    en: 'Turns a ```xlsx-table fence into a booktabs three-line LaTeX table by reading the named .xlsx sheet with the built-in pandoc.zip module (no external dependency), supporting caption/label, column widths, notes, citations and landscape/longtable.'
-    zh: '把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）。'
+    en: Turns a ```xlsx-table fence into a booktabs three-line LaTeX table by
+      reading the named .xlsx sheet with the built-in pandoc.zip module (no
+      external dependency), supporting caption/label, column widths, notes,
+      citations and landscape/longtable.
+    zh: 把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）。
 templates/base.tex:
+  version: 1.0.0
   title:
-    en: 'Personal math preamble'
-    zh: '数学前导'
+    en: Personal math preamble
+    zh: 数学前导
   description:
-    en: 'A header-includes LaTeX preamble sourcing private math/pseudocode packages (cleveref, natbib, subfig, custom macros), with absolute paths hardcoded to one machine.'
-    zh: 'header-includes 用的 LaTeX 前导片段，加载作者私有的数学/伪代码宏包（cleveref、natbib、subfig 及自定义宏），路径写死到某台机器。'
+    en: A header-includes LaTeX preamble sourcing private math/pseudocode packages
+      (cleveref, natbib, subfig, custom macros), with absolute paths hardcoded
+      to one machine.
+    zh: header-includes 用的 LaTeX 前导片段，加载作者私有的数学/伪代码宏包（cleveref、natbib、subfig
+      及自定义宏），路径写死到某台机器。
 templates/cover_letter.latex:
+  version: 1.0.0
   title:
-    en: 'Cover-letter template'
-    zh: '投稿信模板'
+    en: Cover-letter template
+    zh: 投稿信模板
   description:
-    en: 'Pandoc LaTeX template for submission cover letters, built on moderncv (classic/green) with xeCJK; author identity and journal/title come from pandoc variables and cover_letter.lua.'
-    zh: '投稿信的 pandoc LaTeX 模板，基于 moderncv（classic/green）+ xeCJK；作者身份与期刊/标题由 pandoc 变量和 cover_letter.lua 填入。'
+    en: Pandoc LaTeX template for submission cover letters, built on moderncv
+      (classic/green) with xeCJK; author identity and journal/title come from
+      pandoc variables and cover_letter.lua.
+    zh: 投稿信的 pandoc LaTeX 模板，基于 moderncv（classic/green）+ xeCJK；作者身份与期刊/标题由 pandoc
+      变量和 cover_letter.lua 填入。
 templates/cover_letter_template.latex:
+  version: 1.0.0
   title:
-    en: 'Standalone cover-letter template'
-    zh: '独立投稿信模板'
+    en: Standalone cover-letter template
+    zh: 独立投稿信模板
   description:
-    en: 'An alternate moderncv cover-letter template that reads author identity from an \input{config} file and builds the recommended-reviewers table from a data.csv.'
-    zh: '另一份 moderncv 投稿信模板，从 \input{config} 读取作者信息，并用 data.csv 生成推荐审稿人表。'
+    en: An alternate moderncv cover-letter template that reads author identity from
+      an \input{config} file and builds the recommended-reviewers table from a
+      data.csv.
+    zh: 另一份 moderncv 投稿信模板，从 \input{config} 读取作者信息，并用 data.csv 生成推荐审稿人表。
 templates/demo-reference.docx:
+  version: 1.0.0
   title:
-    en: 'Word reference doc'
-    zh: 'Word 样式母版'
+    en: Word reference doc
+    zh: Word 样式母版
   description:
-    en: 'Binary Word reference document supplying the .docx styles (Title, Abstract, Normal, Table, …) that the docx filters and pandoc apply on Word export.'
-    zh: '二进制 Word 参考文档，提供 docx 导出所用的样式（Title、Abstract、Normal、Table 等），供 docx filters 和 pandoc 套用。'
+    en: Binary Word reference document supplying the .docx styles (Title, Abstract,
+      Normal, Table, …) that the docx filters and pandoc apply on Word export.
+    zh: 二进制 Word 参考文档，提供 docx 导出所用的样式（Title、Abstract、Normal、Table 等），供 docx filters
+      和 pandoc 套用。
 templates/eisvogel.latex:
+  version: 1.0.0
   title:
-    en: 'Eisvogel template'
-    zh: 'Eisvogel 模板'
+    en: Eisvogel template
+    zh: Eisvogel 模板
   description:
-    en: 'The upstream Eisvogel pandoc LaTeX template (by Pascal Wagler), a polished article/report template from which the PaperBell template is derived.'
-    zh: '上游 Eisvogel pandoc LaTeX 模板（Pascal Wagler 作），精致的 article/report 模板，PaperBell 自有模板由它衍生。'
+    en: The upstream Eisvogel pandoc LaTeX template (by Pascal Wagler), a polished
+      article/report template from which the PaperBell template is derived.
+    zh: 上游 Eisvogel pandoc LaTeX 模板（Pascal Wagler 作），精致的 article/report 模板，PaperBell
+      自有模板由它衍生。
 templates/fonts.latex:
+  version: 1.0.0
   title:
-    en: 'Font setup partial'
-    zh: '字体设置片段'
+    en: Font setup partial
+    zh: 字体设置片段
   description:
-    en: 'A pandoc template partial handling font selection across pdfTeX/XeTeX/LuaTeX (fontspec, unicode-math, main/sans/mono/CJK fonts).'
-    zh: 'pandoc 模板片段，处理 pdfTeX/XeTeX/LuaTeX 下的字体选择（fontspec、unicode-math，正文/无衬线/等宽/CJK 字体）。'
+    en: A pandoc template partial handling font selection across pdfTeX/XeTeX/LuaTeX
+      (fontspec, unicode-math, main/sans/mono/CJK fonts).
+    zh: pandoc 模板片段，处理 pdfTeX/XeTeX/LuaTeX
+      下的字体选择（fontspec、unicode-math，正文/无衬线/等宽/CJK 字体）。
 templates/hwtemp.tex:
+  version: 1.0.0
   title:
-    en: 'Homework template'
-    zh: '作业模板'
+    en: Homework template
+    zh: 作业模板
   description:
-    en: 'A LaTeX homework/problem-set template with a fancyhdr letterhead (course, name, due date) and math macros, filled via pandoc variables ($hwnum$/$due$/$body$).'
-    zh: 'LaTeX 作业/习题集模板，带 fancyhdr 抬头（课程、姓名、截止日期）和数学宏，用 pandoc 变量（$hwnum$/$due$/$body$）填充。'
+    en: A LaTeX homework/problem-set template with a fancyhdr letterhead (course,
+      name, due date) and math macros, filled via pandoc variables
+      ($hwnum$/$due$/$body$).
+    zh: LaTeX 作业/习题集模板，带 fancyhdr 抬头（课程、姓名、截止日期）和数学宏，用 pandoc
+      变量（$hwnum$/$due$/$body$）填充。
 templates/paperbell.latex:
+  version: 1.0.0
   title:
-    en: 'PaperBell manuscript template'
-    zh: 'PaperBell 论文模板'
+    en: PaperBell manuscript template
+    zh: PaperBell 论文模板
   description:
-    en: 'PaperBell main academic manuscript pandoc LaTeX template (Eisvogel-derived) with Times New Roman, line-number controls, caption formatting and Chinese support.'
-    zh: 'PaperBell 主用的学术论文 pandoc LaTeX 模板（Eisvogel 衍生），含 Times New Roman、行号控制、题注格式和中文支持。'
+    en: PaperBell main academic manuscript pandoc LaTeX template (Eisvogel-derived)
+      with Times New Roman, line-number controls, caption formatting and Chinese
+      support.
+    zh: PaperBell 主用的学术论文 pandoc LaTeX 模板（Eisvogel 衍生），含 Times New
+      Roman、行号控制、题注格式和中文支持。
 templates/proposal.latex:
+  version: 1.0.0
   title:
-    en: 'MSCA proposal template'
-    zh: 'MSCA 提案模板'
+    en: MSCA proposal template
+    zh: MSCA 提案模板
   description:
-    en: 'A LaTeX template for H2020-MSCA-IF proposals: compact article layout with colored section titles (xelatex, Times New Roman), used with MSCA-tags.lua.'
-    zh: 'H2020-MSCA-IF 提案的 LaTeX 模板：紧凑 article 版式、彩色章节标题（xelatex、Times New Roman），配合 MSCA-tags.lua 使用。'
+    en: "A LaTeX template for H2020-MSCA-IF proposals: compact article layout with
+      colored section titles (xelatex, Times New Roman), used with
+      MSCA-tags.lua."
+    zh: H2020-MSCA-IF 提案的 LaTeX 模板：紧凑 article 版式、彩色章节标题（xelatex、Times New Roman），配合
+      MSCA-tags.lua 使用。
 templates/responseletter.sty:
+  version: 1.0.0
   title:
-    en: 'Response-letter package'
-    zh: '回复信宏包'
+    en: Response-letter package
+    zh: 回复信宏包
   description:
-    en: 'A reusable XeLaTeX package for journal response letters, providing the RC (reviewer comment), AR (author response) and manuscript environments plus \zh/\note and draft/final modes.'
-    zh: '期刊回复信的可复用 XeLaTeX 宏包，提供 RC（审稿意见）、AR（作者回复）、manuscript 环境及 \zh/\note 和草稿/终稿模式。'
+    en: A reusable XeLaTeX package for journal response letters, providing the RC
+      (reviewer comment), AR (author response) and manuscript environments plus
+      \zh/\note and draft/final modes.
+    zh: 期刊回复信的可复用 XeLaTeX 宏包，提供 RC（审稿意见）、AR（作者回复）、manuscript 环境及 \zh/\note 和草稿/终稿模式。
 templates/responseletter.template.tex:
+  version: 1.0.0
   title:
-    en: 'Response-letter pandoc template'
-    zh: '回复信 pandoc 模板'
+    en: Response-letter pandoc template
+    zh: 回复信 pandoc 模板
   description:
-    en: 'The pandoc LaTeX template that wires up responseletter.sty, passing metadata (papertitle/authors/journal/…) into \ResponseSetup and emitting the letter body.'
-    zh: '驱动 responseletter.sty 的 pandoc LaTeX 模板，把元数据（papertitle/authors/journal 等）传入 \ResponseSetup 并输出信件正文。'
+    en: The pandoc LaTeX template that wires up responseletter.sty, passing metadata
+      (papertitle/authors/journal/…) into \ResponseSetup and emitting the letter
+      body.
+    zh: 驱动 responseletter.sty 的 pandoc LaTeX 模板，把元数据（papertitle/authors/journal 等）传入
+      \ResponseSetup 并输出信件正文。
 templates/scribe.tex:
+  version: 1.0.0
   title:
-    en: 'General pandoc LaTeX template'
-    zh: '通用 pandoc 模板'
+    en: General pandoc LaTeX template
+    zh: 通用 pandoc 模板
   description:
-    en: 'A general-purpose pandoc LaTeX template supporting article/book/beamer output (the stock default template), used for scribe/lecture-style notes.'
-    zh: '通用 pandoc LaTeX 模板，支持 article/book/beamer 输出（pandoc 默认模板），用于讲义/scribe 笔记。'
+    en: A general-purpose pandoc LaTeX template supporting article/book/beamer
+      output (the stock default template), used for scribe/lecture-style notes.
+    zh: 通用 pandoc LaTeX 模板，支持 article/book/beamer 输出（pandoc 默认模板），用于讲义/scribe 笔记。
 csl/apa.csl:
+  version: 1.0.0
   title:
-    en: 'APA 7th citation style'
-    zh: 'APA 第 7 版'
+    en: APA 7th citation style
+    zh: APA 第 7 版
   description:
-    en: 'American Psychological Association 7th edition citation style.'
-    zh: '美国心理学会（APA）第 7 版引用样式。'
+    en: American Psychological Association 7th edition citation style.
+    zh: 美国心理学会（APA）第 7 版引用样式。
 csl/nature.csl:
+  version: 1.0.0
   title:
-    en: 'Nature citation style'
-    zh: 'Nature 样式'
+    en: Nature citation style
+    zh: Nature 样式
   description:
-    en: 'Nature journal citation style.'
-    zh: 'Nature 期刊引用样式。'
+    en: Nature journal citation style.
+    zh: Nature 期刊引用样式。
 csl/pnas.csl:
+  version: 1.0.0
   title:
-    en: 'PNAS citation style'
-    zh: 'PNAS 样式'
+    en: PNAS citation style
+    zh: PNAS 样式
   description:
-    en: 'PNAS (Proceedings of the National Academy of Sciences) citation style.'
-    zh: 'PNAS（美国国家科学院院刊）引用样式。'
+    en: PNAS (Proceedings of the National Academy of Sciences) citation style.
+    zh: PNAS（美国国家科学院院刊）引用样式。
 csl/undefined.csl:
+  version: 1.0.0
   title:
-    en: 'Default fallback style'
-    zh: '默认兜底样式'
+    en: Default fallback style
+    zh: 默认兜底样式
   description:
-    en: 'The fallback/default citation style used when none is specified, a copy of APA 7th edition.'
-    zh: '未指定样式时使用的兜底默认引用样式，是 APA 第 7 版的副本。'
+    en: The fallback/default citation style used when none is specified, a copy of
+      APA 7th edition.
+    zh: 未指定样式时使用的兜底默认引用样式，是 APA 第 7 版的副本。
 defaults/crossref.yaml:
+  version: 1.0.0
   title:
-    en: 'pandoc-crossref config'
-    zh: 'crossref 配置'
+    en: pandoc-crossref config
+    zh: crossref 配置
   description:
-    en: 'Shared pandoc-crossref config include, setting the figure prefix to Figure/Figures and equation numbering to the ($i$) template.'
-    zh: '共享的 pandoc-crossref 配置片段，把图前缀设为 Figure/Figures，公式编号用 ($i$) 模板。'
+    en: Shared pandoc-crossref config include, setting the figure prefix to
+      Figure/Figures and equation numbering to the ($i$) template.
+    zh: 共享的 pandoc-crossref 配置片段，把图前缀设为 Figure/Figures，公式编号用 ($i$) 模板。

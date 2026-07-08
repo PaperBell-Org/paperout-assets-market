@@ -23,8 +23,8 @@ jobs:
           cache: "npm"
       - run: npm ci
 
-      - name: Ensure catalog versions match tag
-        run: node scripts/check-versions.mjs "${GITHUB_REF#refs/tags/}"
+      - name: Check catalog versions are valid semver (independent of the tag)
+        run: node scripts/check-versions.mjs
 
       - name: Validate invariants + index (strict)
         run: node scripts/validate.mjs
