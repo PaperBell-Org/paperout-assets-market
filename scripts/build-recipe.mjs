@@ -51,6 +51,13 @@ function recipeTo(defaults) {
   return String(parseDefaultsFile(defaults).doc.to || '').trim();
 }
 
+// Some filters inject the absolute asset path (e.g. cover_letter.lua's AssetDir →
+// \graphicspath). Normalize the repo root to a placeholder so the fingerprint is
+// reproducible across machines (local /Users/… vs CI /home/runner/…).
+function normalize(buf) {
+  return Buffer.from(buf.toString('utf8').split(ROOT).join('${REPO_ROOT}'), 'utf8');
+}
+
 // A reproducible text fingerprint of the recipe's real output, honoring its FORMAT:
 //   docx   → the produced document.xml (stable; timestamps live elsewhere in the zip)
 //   beamer → the beamer LaTeX source
@@ -64,13 +71,13 @@ function fingerprint(id) {
     const docx = path.join(tmp, 'out.docx');
     execFileSync('pandoc', [sample, '--data-dir', ROOT, '--defaults', defaults, '-o', docx], { stdio: 'pipe' });
     const xml = execFileSync('unzip', ['-p', docx, 'word/document.xml'], { maxBuffer: 64 * 1024 * 1024 });
-    return sha256(xml);
+    return sha256(normalize(xml));
   }
   const writer = to === 'beamer' ? 'beamer' : 'latex';
   const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--defaults', defaults, '-t', writer, '-o', '-'], {
     maxBuffer: 64 * 1024 * 1024,
   });
-  return sha256(out);
+  return sha256(normalize(out));
 }
 
 function fullBuild(id) {
