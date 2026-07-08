@@ -1,0 +1,46 @@
+# Curated CSL citation styles.
+#
+# We do NOT vendor the content of most styles — they are resolved on demand from the
+# official Citation Style Language project (CC BY-SA 3.0). The plugin fetches each by
+# id from `source.base + <id>.csl` onto the user's disk for pandoc --csl.
+#
+# A few high-use styles are also bundled offline (offline: true); those must have a
+# real file at csl/<id>.csl so they work without a network (and ship in bundles).
+#
+# This list is curated — add/remove styles freely; any id that exists in the upstream
+# repo root as `<id>.csl` works.
+
+source:
+  upstream: https://github.com/citation-style-language/styles
+  # Pin `@master` to a commit or dated tag for fully reproducible resolution.
+  base: https://cdn.jsdelivr.net/gh/citation-style-language/styles@master/
+  license: CC-BY-SA-3.0
+
+styles:
+  apa:
+    offline: true
+    title: { en: APA 7th edition, zh: APA 第 7 版 }
+  nature:
+    offline: true
+    title: { en: Nature, zh: Nature }
+  pnas:
+    offline: true
+    title: { en: PNAS, zh: PNAS }
+  science:
+    title: { en: Science, zh: Science }
+  cell:
+    title: { en: Cell, zh: Cell }
+  ieee:
+    title: { en: IEEE, zh: IEEE }
+  vancouver:
+    title: { en: Vancouver, zh: 温哥华格式 }
+  chicago-author-date:
+    title: { en: Chicago (author-date), zh: 芝加哥（作者-年份） }
+  modern-language-association:
+    title: { en: MLA 9th edition, zh: MLA 第 9 版 }
+  american-chemical-society:
+    title: { en: ACS, zh: 美国化学会（ACS） }
+  elsevier-harvard:
+    title: { en: Elsevier (Harvard), zh: Elsevier（哈佛） }
+  nature-communications:
+    title: { en: Nature Communications, zh: Nature Communications }

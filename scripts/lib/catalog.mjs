@@ -35,6 +35,13 @@ export function loadAssetDocs(catalogDir) {
   return YAML.parse(fs.readFileSync(fp, 'utf8')) ?? {};
 }
 
+/** Load catalog/csl-styles.yaml (curated CSL styles resolved from the official repo). */
+export function loadCslStyles(catalogDir) {
+  const fp = path.join(catalogDir, 'csl-styles.yaml');
+  if (!fs.existsSync(fp)) return null;
+  return YAML.parse(fs.readFileSync(fp, 'utf8'));
+}
+
 export function loadBundleDefs(catalogDir) {
   const dir = path.join(catalogDir, 'bundles');
   const out = {};

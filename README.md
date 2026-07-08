@@ -38,6 +38,7 @@ wherever it is downloaded (see the invariants in [CONTRIBUTING.md](CONTRIBUTING.
 ```
 catalog/
   assets.yaml             # bilingual title + description for every leaf asset
+  csl-styles.yaml         # curated citation styles resolved from the official CSL repo
   recipes/<id>/
     recipe.yaml            # version, bilingual title/description
     README.md             # how to use this recipe
@@ -52,6 +53,16 @@ catalog/
 Every asset in `index.json` carries a bilingual `title` and `description` (from
 `catalog/assets.yaml` for filters/templates/csl, or `recipe.yaml` for recipes), so the
 plugin can show what each asset does when a user opens it.
+
+### Citation styles (CSL)
+
+CSL styles are **not maintained here** — `index.json` exposes a `cslStyles` list curated
+in `catalog/csl-styles.yaml`, resolved on demand from the official
+[Citation Style Language](https://github.com/citation-style-language/styles) project
+(CC BY-SA 3.0). Each entry has an official `url`; a few high-use styles (`apa`, `nature`,
+`pnas`) are also bundled offline (`offline: true`, with an `offlineUrl` + `sha256`) so
+export works without a network. The plugin fetches a style to the user's disk for
+`pandoc --csl`.
 
 Keeping metadata out of the four asset dirs keeps the packaged zips clean and gives
 the frontend one predictable tree to read.

@@ -20,7 +20,7 @@ this before opening a PR.
 | --- | --- | --- |
 | A Lua filter | `filters/<name>.lua` | must pass the security scan (below) |
 | A LaTeX/Word template | `templates/<name>.{tex,latex,sty,docx}` | register `.sty`/`.tex` siblings as the recipe's `extraFiles` |
-| A citation style | `csl/<name>.csl` | — |
+| A citation style | add an id to `catalog/csl-styles.yaml` (resolved from the official CSL repo) | only vendor a file in `csl/` if it needs to be bundled offline (`offline: true`) |
 | A **complete recipe** (a full export preset) | `defaults/<id>.yaml` **and** `catalog/recipes/<id>/…` | sample + golden (below) |
 
 A filter/template/csl only becomes downloadable once a **recipe** references it. Adding

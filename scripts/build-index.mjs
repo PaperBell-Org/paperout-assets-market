@@ -13,7 +13,7 @@ import { checkDefaults } from './lib/invariants.mjs';
 import { parseDefaultsFile } from './lib/parse-defaults.mjs';
 import { sha256File } from './lib/hash.mjs';
 import { fileVersion, isSemver, normalizeSemver } from './lib/version.mjs';
-import { loadRecipeManifests, loadAssetDocs, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
+import { loadRecipeManifests, loadAssetDocs, loadCslStyles, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO = process.env.MARKET_REPO || 'PaperBell-Org/paperout-assets-market';
@@ -171,6 +171,24 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     if (!exists(key)) errors.push(`catalog/assets.yaml: "${key}" has no matching file`);
   }
 
+  // curated CSL styles: resolved from the official CSL repo (CC BY-SA 3.0); a few are
+  // also bundled offline. The plugin uses `url` (official) or `offlineUrl` (ours).
+  const cslStyles = [];
+  const cslDef = loadCslStyles(path.join(ROOT, 'catalog'));
+  if (cslDef?.styles) {
+    const base = cslDef.source?.base ?? '';
+    const license = cslDef.source?.license ?? 'CC-BY-SA-3.0';
+    for (const [id, s] of Object.entries(cslDef.styles)) {
+      const entry = { id, title: bilingual(s.title), url: `${base}${id}.csl`, license, offline: !!s.offline };
+      if (s.offline) {
+        const rel = `csl/${id}.csl`;
+        if (!exists(rel)) errors.push(`csl style "${id}" is offline:true but ${rel} is missing`);
+        else { entry.offlineUrl = rawUrl(rel, tag); entry.sha256 = sha256File(abs(rel)); }
+      }
+      cslStyles.push(entry);
+    }
+  }
+
   // bundles produced by pack-bundle
   let bundles = [];
   if (exists(path.join('dist', 'bundles.json'))) {
@@ -185,6 +203,7 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     repo: REPO,
     tag,
     assets,
+    cslStyles,
     bundles,
   };
   return { index, errors, warnings };
