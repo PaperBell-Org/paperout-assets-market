@@ -1,5 +1,11 @@
 id: response-letter-docx
-version: 1.0.0
-title: "Response to reviewers (Word)"
-description: "Point-by-point response to reviewers as a Word document: Obsidian callouts become native paragraphs/quote blocks, Chinese draft annotations stripped for submission."
+version: 1.0.1
+title:
+  en: Response to reviewers (Word)
+  zh: 审稿回复信 (Word)
+description:
+  en: "Point-by-point response to reviewers as a Word document: Obsidian callouts
+    become native paragraphs/quote blocks, Chinese draft annotations stripped
+    for submission."
+  zh: 逐条审稿回复导出 Word 文档：callout 转成原生段落/引用块，导出前剔除中文草稿批注。
 tier: core

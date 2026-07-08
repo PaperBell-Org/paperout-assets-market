@@ -1,7 +1,13 @@
 id: cover_letter
-version: 1.0.0
-title: "Cover letter (PDF)"
-description: "Submission / revised-submission cover letter to PDF, built on the moderncv class with xeCJK. Title/journal/corresponding author are filled from the note’s metadata.json."
+version: 1.0.1
+title:
+  en: Cover letter (PDF)
+  zh: 投稿信 (PDF)
+description:
+  en: Submission / revised-submission cover letter to PDF, built on the moderncv
+    class with xeCJK. Title/journal/corresponding author are filled from the
+    note’s metadata.json.
+  zh: 投稿/修订投稿信导出 PDF，基于 moderncv + xeCJK；标题、期刊、通讯作者从笔记的 metadata.json 填充。
 tier: core
 extraFiles:
   - templates/cover_letter/MPI-GEA_logo.pdf

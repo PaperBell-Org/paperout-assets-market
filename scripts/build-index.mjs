@@ -13,7 +13,7 @@ import { checkDefaults } from './lib/invariants.mjs';
 import { parseDefaultsFile } from './lib/parse-defaults.mjs';
 import { sha256File } from './lib/hash.mjs';
 import { fileVersion, isSemver, normalizeSemver } from './lib/version.mjs';
-import { loadRecipeManifests, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
+import { loadRecipeManifests, loadAssetDocs, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const REPO = process.env.MARKET_REPO || 'PaperBell-Org/paperout-assets-market';
@@ -43,16 +43,28 @@ function rawUrl(rel, tag) {
   return `https://raw.githubusercontent.com/${REPO}/${tag}/${norm(rel)}`;
 }
 
+// Normalize a title/description into a bilingual { en, zh } object. Accepts a plain
+// string (→ en, empty zh) or an { en, zh } object.
+function bilingual(v) {
+  if (v && typeof v === 'object') return { en: v.en ?? '', zh: v.zh ?? '' };
+  if (typeof v === 'string') return { en: v, zh: '' };
+  return { en: '', zh: '' };
+}
+
 function fileRef(rel, tag) {
   return { path: norm(rel), url: rawUrl(rel, tag), sha256: sha256File(abs(rel)) };
 }
 
-function leafAsset(rel, type, tag) {
+function leafAsset(rel, type, tag, docs) {
+  const id = norm(rel);
+  const doc = docs[id] || {};
   return {
-    id: norm(rel),
+    id,
     type,
     version: fileVersion(rel, tag),
-    sourcePath: norm(rel),
+    title: bilingual(doc.title),
+    description: bilingual(doc.description),
+    sourcePath: id,
     url: rawUrl(rel, tag),
     sha256: sha256File(abs(rel)),
     tier: 'core',
@@ -71,10 +83,12 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     assets.push(a);
   };
 
+  const docs = loadAssetDocs(path.join(ROOT, 'catalog'));
+
   // leaf assets
-  for (const rel of listFiles('filters', { exts: ['.lua'] })) add(leafAsset(rel, 'filter', tag));
-  for (const rel of listFiles('csl', { exts: ['.csl'] })) add(leafAsset(rel, 'csl', tag));
-  for (const rel of listFiles('templates', { exts: ['.tex', '.latex', '.sty', '.docx'] })) add(leafAsset(rel, 'template', tag));
+  for (const rel of listFiles('filters', { exts: ['.lua'] })) add(leafAsset(rel, 'filter', tag, docs));
+  for (const rel of listFiles('csl', { exts: ['.csl'] })) add(leafAsset(rel, 'csl', tag, docs));
+  for (const rel of listFiles('templates', { exts: ['.tex', '.latex', '.sty', '.docx'] })) add(leafAsset(rel, 'template', tag, docs));
 
   const manifests = loadRecipeManifests(path.join(ROOT, 'catalog'));
 
@@ -86,7 +100,7 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     // includes (e.g. crossref.yaml) are shared config data, not export recipes —
     // they carry no template/filters/data-dir, so recipe invariants don't apply.
     if (internal === 'include') {
-      add(leafAsset(rel, 'include', tag));
+      add(leafAsset(rel, 'include', tag, docs));
       continue;
     }
 
@@ -117,8 +131,10 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
       id,
       type: 'recipe',
       version: normalizeSemver(version, version),
-      title: manifest?.title ?? id,
-      description: manifest?.description ?? '',
+      title: manifest?.title ? bilingual(manifest.title) : { en: id, zh: '' },
+      description: isFallback
+        ? { en: 'Default preset used when a note names no template.', zh: '笔记未指定模板时使用的默认预设。' }
+        : bilingual(manifest?.description),
       sourcePath: norm(rel),
       url: rawUrl(rel, tag),
       sha256: sha256File(abs(rel)),
@@ -142,6 +158,17 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
     if (!exists(path.join('defaults', `${id}.yaml`))) {
       errors.push(`catalog/recipes/${id}/ has no matching defaults/${id}.yaml`);
     }
+  }
+
+  // every asset must be documented so the plugin can show its purpose
+  for (const a of assets) {
+    if (!a.description || !a.description.en) {
+      (strict ? errors : warnings).push(`asset "${a.id}" has no description — add it to catalog/assets.yaml`);
+    }
+  }
+  // every assets.yaml entry must point at a real file
+  for (const key of Object.keys(docs)) {
+    if (!exists(key)) errors.push(`catalog/assets.yaml: "${key}" has no matching file`);
   }
 
   // bundles produced by pack-bundle

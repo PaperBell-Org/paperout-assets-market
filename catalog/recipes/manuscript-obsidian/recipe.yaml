@@ -1,5 +1,11 @@
 id: manuscript-obsidian
-version: 1.0.0
-title: "Manuscript (Word)"
-description: "Full manuscript to Word (.docx): figures at end, line numbers, CJK formatting, full-width tables, cross-references and citations, using a reference-doc template."
+version: 1.0.1
+title:
+  en: Manuscript (Word)
+  zh: 手稿 (Word)
+description:
+  en: "Full manuscript to Word (.docx): figures at end, line numbers, CJK
+    formatting, full-width tables, cross-references and citations, using a
+    reference-doc template."
+  zh: 完整手稿导出 Word（.docx）：图集中到末尾、行号、CJK 排版、全宽表格、交叉引用与文献，使用 reference-doc 模板。
 tier: core

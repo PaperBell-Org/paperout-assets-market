@@ -37,8 +37,9 @@ wherever it is downloaded (see the invariants in [CONTRIBUTING.md](CONTRIBUTING.
 
 ```
 catalog/
+  assets.yaml             # bilingual title + description for every leaf asset
   recipes/<id>/
-    recipe.yaml            # version, title, description
+    recipe.yaml            # version, bilingual title/description
     README.md             # how to use this recipe
     preview.png           # what it produces (for the frontend)
     sample/
@@ -47,6 +48,10 @@ catalog/
   bundles/<id>/
     bundle.yaml           # which recipes/files a downloadable bundle contains
 ```
+
+Every asset in `index.json` carries a bilingual `title` and `description` (from
+`catalog/assets.yaml` for filters/templates/csl, or `recipe.yaml` for recipes), so the
+plugin can show what each asset does when a user opens it.
 
 Keeping metadata out of the four asset dirs keeps the packaged zips clean and gives
 the frontend one predictable tree to read.
