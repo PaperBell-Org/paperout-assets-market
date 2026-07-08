@@ -1,0 +1,12 @@
+[
+  {
+    "file": "filters/latex-div.lua",
+    "pattern": "dofile",
+    "reason": "Vendored Public-Domain R Markdown filter that converts Pandoc Divs with a latex attribute into LaTeX environments. The dofile loads R Markdown's shared.lua via the RMARKDOWN_LUA_SHARED env var, which is unset in the PaperBell runtime — so it is inert here and no recipe references it. Kept for reference; see NOTICE."
+  },
+  {
+    "file": "filters/latex-div.lua",
+    "pattern": "external-require",
+    "reason": "Same vendored R Markdown latex-div filter (require 'text'). Inert in the PaperBell runtime; kept for reference. See NOTICE."
+  }
+]

@@ -1,0 +1,5 @@
+id: response-letter-docx
+version: 1.0.0
+title: "Response to reviewers (Word)"
+description: "Point-by-point response to reviewers as a Word document: Obsidian callouts become native paragraphs/quote blocks, Chinese draft annotations stripped for submission."
+tier: core

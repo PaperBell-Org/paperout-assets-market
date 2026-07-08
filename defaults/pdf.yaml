@@ -1,0 +1,63 @@
+## General options
+standalone: true
+embed-resources: true
+from: markdown+tex_math_single_backslash+wikilinks_title_after_pipe+mark+autolink_bare_uris+pipe_tables
+output-file: output.pdf
+# pdf-engine: pdflatex                           #! use xelatex to support CJK and unicode
+pdf-engine: xelatex                           #! use xelatex to support CJK and unicode
+highlight-style: tango
+data-dir: ${.}/..                             #! custom data directory, the directory containing the filters, defaults, and tempaltes folders
+# toc: true
+
+## Templates
+template: ${USERDATA}/templates/paperbell.latex
+
+## Biliography
+# bibliography: ${USERDATA}/../../mybib.bib     #! custom bib file  # (commented by sync: plugin injects --bibliography)
+# csl: ${USERDATA}/csl/nature.csl            #! custom csl
+
+filters:
+  - ${USERDATA}/filters/mute.lua
+  - ${USERDATA}/filters/quotes-i18n.lua  #! 中英混排引号本地化：中文句用全角贴紧、英文句用西文弯引号（修 pandoc smart 在 CJK 边界失败）
+  - ${USERDATA}/filters/image.lua
+  - ${USERDATA}/filters/codeblock.lua
+  - ${USERDATA}/filters/math.lua
+  - ${USERDATA}/filters/callout.lua
+  - ${USERDATA}/filters/shift_headings.lua
+  - ${USERDATA}/filters/link.lua
+  - ${USERDATA}/filters/div.lua
+  - ${USERDATA}/filters/preamble.lua
+  - ${USERDATA}/filters/highlight.lua
+  - pandoc-crossref
+  - citeproc
+
+metadata:
+  CJKmainfont: Songti SC
+  CJKsansfont: Heiti SC
+  CJKmonofont: STFangsong
+  mainfont: Times New Roman
+  sansfont: Times New Roman          # ← 改为 Times New Roman
+  monofont: Times New Roman          # ← 改为 Times New Roman
+  numbersections: true
+  link-citations: true
+  # For pandoc-crossref
+  crossrefYaml: ${USERDATA}/defaults/crossref.yaml
+  # For citeproc
+  reference-section-title: References
+  # 添加字体回退选项
+  sansfontfallback: Times New Roman, serif          # ← 改为 Times New Roman
+  mainfontfallback: Times New Roman, serif
+  monofontfallback: Times New Roman, serif   
+
+variables:
+  # For beamer
+  navigation: horizontal
+  fonttheme: "professionalfonts"
+  theme: "Antibes"
+  graphics: true
+  natbiboptions: numbers,square
+  biblatexoptions: style=numeric
+  biblio-title: References
+  # Float control: uncomment to control figure/table placement
+  # Options: htbp (default), H (force here), p (float page only), t (top), b (bottom)
+  # float-placement: H  # Use this to force figures at current position, avoiding "Float too large" warnings

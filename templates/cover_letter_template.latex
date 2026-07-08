@@ -1,0 +1,118 @@
+\documentclass[11pt,a4paper,roman]{moderncv}
+\usepackage[english]{babel}
+\usepackage{ragged2e}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage[l3]{csvsimple}
+\usepackage{svg}
+\usepackage{lipsum} % 用于生成示例文本
+
+\moderncvstyle{classic}
+\moderncvcolor{green}
+
+% 字体设置 - 使用Times New Roman
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+
+% 页面设置 - 更紧凑的边距
+\usepackage[scale=0.85]{geometry}
+
+% 加载配置文件
+\input{config}
+
+% 设置个人信息
+\name{\AuthorName}{}
+\address{\AuthorInstitution}{\AuthorAddress}
+\phone[mobile]{\AuthorPhone}
+\email{\AuthorEmail}
+
+\begin{document}
+
+% 设置文本对齐方式
+\raggedright
+
+% 插入机构Logo
+\begin{minipage}[t]{\textwidth}
+\includegraphics[width=\LogoScale\textwidth]{\LogoPath}
+\end{minipage}
+
+% 收件人信息
+\recipient{Dear Editor in Chief\ifx\EditorName\empty\else: \EditorName\fi}{}
+\opening{Dear Editor,}
+\closing{Sincerely,}
+\enclosure[Enclosures]{Main manuscript, Appendix}
+\makelettertitle
+
+% 投稿说明
+I am pleased to submit an original research article entitled ``\PaperTitle'' for consideration for publication in \textit{\JournalName}%
+\ifdefined\SpecialIssue%
+~as part of the special issue \textit{\SpecialIssue}%
+\fi.
+
+% 论文摘要和贡献 - 这里会被Pandoc替换为Markdown内容
+$body$
+
+% 投稿声明
+This manuscript has not been published and is not under consideration for publication elsewhere, and all the authors have read and approved the manuscript. Furthermore, we declare no conflicts of interest to disclose.
+
+% 推荐审稿人
+If you feel that the manuscript is appropriate for your journal, we suggest the following reviewers:
+
+% 从CSV文件读取审稿人
+\vspace{0.2cm}
+\textbf{Recommended Reviewers:}
+\vspace{0.1cm}
+
+% Creating a table from CSV data
+\vspace{0.1cm}
+\begin{center}
+\footnotesize
+\begin{longtable}{p{3.5cm} p{4.5cm} p{8cm}} % three columns
+\toprule
+  \textbf{Reviewer} & \textbf{Email} & \textbf{Recommendation} \\
+\midrule
+  \csvreader[
+    head to column names,
+    late after line=\\,
+    range={1-\MaxReviewers}
+  ]{data.csv}{
+    reviewer=\colA, email=\colB, reason=\colC
+  }{
+    \colA & \colB & \colC
+  }
+\bottomrule
+\end{longtable}
+\end{center}
+
+I appreciate your consideration!
+
+\vspace{0.2cm}
+
+Sincerely,
+
+% 使用minipage将签名放在右侧
+\begin{minipage}[t]{0.6\textwidth}
+\textbf{\AuthorName} (On behalf of the author team)
+
+% 作者信息
+\AuthorInstitution
+
+\AuthorAddress
+
+Email: \AuthorEmail
+
+% 可选：添加ORCID
+\ifx\AuthorOrcid\empty\else
+ORCID: \AuthorOrcid
+\fi
+\end{minipage}%
+
+\begin{minipage}[t]{0.4\textwidth}
+\includegraphics[height=1.5cm]{\SignaturePath}
+\end{minipage}
+
+\end{document}

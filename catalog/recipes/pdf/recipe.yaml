@@ -1,0 +1,5 @@
+id: pdf
+version: 1.0.0
+title: "Generic manuscript (PDF)"
+description: "A general-purpose PDF export on the PaperBell LaTeX template with a smaller filter set — a lighter alternative to the full `paperbell` preset."
+tier: core

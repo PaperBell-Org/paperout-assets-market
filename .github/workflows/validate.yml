@@ -1,0 +1,47 @@
+name: Validate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # PR scope diff + git-derived versions
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20.x"
+          cache: "npm"
+      - run: npm ci
+
+      - name: PR scope gate (added-only unless core-change label)
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: node scripts/check-pr-scope.mjs
+
+      - name: Install luacheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y luarocks
+          sudo luarocks install luacheck
+
+      - name: Lua lint
+        run: luacheck filters/ --config .luacheckrc
+
+      - name: Security scan (Lua/LaTeX high-risk APIs)
+        run: node scripts/scan-security.mjs
+
+      - name: Validate invariants + index (strict)
+        run: node scripts/validate.mjs
+
+      - name: Install pandoc + pandoc-crossref
+        run: bash .github/scripts/install-pandoc.sh
+
+      - name: Build-test recipes (fingerprint smoke + golden)
+        run: node scripts/build-recipe.mjs --all

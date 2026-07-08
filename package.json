@@ -1,0 +1,25 @@
+{
+  "name": "paperout-assets-market",
+  "version": "0.0.0",
+  "description": "Asset market of Obsidian → Pandoc document-export recipes (filters, templates, CSL, defaults) for the PaperBell / Longform plugin.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build:index": "node scripts/build-index.mjs",
+    "pack:bundles": "node scripts/pack-bundle.mjs",
+    "validate": "node scripts/validate.mjs",
+    "scan:security": "node scripts/scan-security.mjs",
+    "check:pr-scope": "node scripts/check-pr-scope.mjs",
+    "build:recipe": "node scripts/build-recipe.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0"
+  }
+}

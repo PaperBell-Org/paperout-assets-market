@@ -1,0 +1,22 @@
+## response-letter-docx.yaml —— 审稿回复信（Markdown → Word/.docx）
+## responseletter-docx.lua 把 Obsidian callout 转成原生段落/引用块，并在导出前
+## 剔除所有中文翻译（**中文翻译：**、%% … %%、<!-- … -->）与草稿批注，
+## 生成干净的英文投稿版回复信。无需 XeLaTeX。
+##
+## 变量约定：${.} = 本 defaults 目录；${USERDATA} = data-dir = Pandoc 目录。
+
+from: markdown
+to: docx
+standalone: true
+data-dir: ${.}/..
+
+## 引文库（与其它 PaperBell preset 一致，供回复信里的 [@cite] 使用）
+# bibliography: ${USERDATA}/../../mybib.bib  # (commented by sync: plugin injects --bibliography)
+
+filters:
+  - ${USERDATA}/filters/responseletter-docx.lua   #! callout → docx 原生块 + 剔除中文
+  - citeproc
+
+metadata:
+  type: author-response
+  link-citations: false

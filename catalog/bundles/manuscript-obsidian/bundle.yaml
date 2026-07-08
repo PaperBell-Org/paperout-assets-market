@@ -1,0 +1,6 @@
+id: manuscript-obsidian
+version: 1.0.0
+title: "Manuscript (Word) — bundle"
+description: "Everything needed for the manuscript-obsidian recipe in one download."
+include:
+  recipes: [manuscript-obsidian]

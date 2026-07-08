@@ -1,0 +1,7 @@
+id: response-letter
+version: 1.0.0
+title: "Response to reviewers (PDF)"
+description: "Point-by-point response to reviewers to PDF: Obsidian callouts become colored reviewer-comment / author-response cards via responseletter.sty, with draft and final variants."
+tier: core
+extraFiles:
+  - templates/responseletter.sty

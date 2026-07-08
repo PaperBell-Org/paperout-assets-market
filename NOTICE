@@ -1,0 +1,49 @@
+paperout-assets-market — third-party attributions
+==================================================
+
+This repository's own recipes, filters, templates, scripts, and docs are licensed
+MIT (see LICENSE). The files listed below are vendored from third parties and keep
+their own upstream licenses. Preserve these attributions in any redistribution,
+including the published bundle zips.
+
+--------------------------------------------------------------------------------
+templates/eisvogel.latex
+  Eisvogel — a Pandoc LaTeX template.
+  Copyright (c) 2017–2023, Pascal Wagler
+  Copyright (c) 2014–2023, John MacFarlane
+  License: BSD 3-Clause. Full license text retained in the file header.
+  Upstream: https://github.com/Wandmalfarbe/pandoc-latex-template
+
+templates/paperbell.latex
+  Derived from the Eisvogel template (above) with significant modifications for
+  academic manuscript preparation.
+  Copyright (c) 2024–present, PaperBell & Shuang Song
+  As a derivative of Eisvogel, it remains subject to Eisvogel's BSD 3-Clause
+  terms; the file header carries the derivation notice.
+
+templates/cover_letter.latex, templates/cover_letter_template.latex
+  Built on the moderncv LaTeX class (LPPL). moderncv itself is not vendored here —
+  it is provided by the user's TeX distribution.
+
+filters/latex-div.lua
+  Converts Pandoc native Divs (carrying a `latex`/`data-latex` attribute) into
+  LaTeX environments (\begin{env}…\end{env}).
+  Author: Romain Lesur, Christophe Dervieux, Atsushi Yasumoto, Yihui Xie (R Markdown).
+  License: Public Domain.
+  Note: it loads R Markdown's shared.lua via the RMARKDOWN_LUA_SHARED env var, which
+  is not set in the PaperBell runtime, so no recipe currently references it. Kept for
+  reference / future adaptation.
+
+csl/apa.csl, csl/nature.csl, csl/pnas.csl, csl/undefined.csl
+  Citation styles from the Citation Style Language project and their respective
+  style authors.
+  License: Creative Commons Attribution-ShareAlike 3.0 (CC BY-SA 3.0), as declared
+  in each file's <rights> element.
+  Upstream: https://github.com/citation-style-language/styles
+  These files are redistributed unmodified (aggregation); the CC BY-SA terms apply
+  to the style files themselves, not to the rest of this repository.
+
+--------------------------------------------------------------------------------
+Audit status: the remaining templates and Lua filters are original to this project
+or use only standard LaTeX packages. Re-audit when new external-origin assets are
+contributed (see CONTRIBUTING.md → attribution policy).

@@ -1,0 +1,12 @@
+# Core assets and tooling — changes here require a maintainer review, and PRs that
+# modify (not just add) these paths must carry the "core-change" label
+# (enforced by scripts/check-pr-scope.mjs).
+
+/filters/      @SongshGeo
+/templates/    @SongshGeo
+/csl/          @SongshGeo
+/defaults/     @SongshGeo
+/preamble.sty  @SongshGeo
+/scripts/      @SongshGeo
+/.github/      @SongshGeo
+/catalog/bundles/ @SongshGeo

@@ -1,0 +1,6 @@
+id: pdf
+version: 1.0.0
+title: "Generic manuscript (PDF) — bundle"
+description: "Everything needed for the pdf recipe in one download."
+include:
+  recipes: [pdf]

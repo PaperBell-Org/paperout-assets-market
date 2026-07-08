@@ -1,0 +1,6 @@
+id: cover_letter
+version: 1.0.0
+title: "Cover letter (PDF) — bundle"
+description: "Everything needed for the cover_letter recipe in one download."
+include:
+  recipes: [cover_letter]

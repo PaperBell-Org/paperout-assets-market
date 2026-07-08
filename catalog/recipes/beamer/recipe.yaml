@@ -1,0 +1,5 @@
+id: beamer
+version: 1.0.0
+title: "Beamer slides (PDF)"
+description: "Markdown to Beamer presentation slides (Antibes theme) to PDF, with callouts and citations."
+tier: core

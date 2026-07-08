@@ -1,0 +1,5 @@
+id: paperbell
+version: 1.0.0
+title: "PaperBell manuscript (PDF)"
+description: "Bilingual CJK/English academic manuscript to PDF (XeLaTeX): line numbers, figure/table cross-references (pandoc-crossref), and citeproc citations."
+tier: core

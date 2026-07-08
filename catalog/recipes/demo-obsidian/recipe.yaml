@@ -1,0 +1,5 @@
+id: demo-obsidian
+version: 1.0.0
+title: "Manuscript demo (Word)"
+description: "Obsidian manuscript to Word (.docx) with a reference doc template: figures at end, line numbers, CJK formatting, full-width tables, cross-refs and citations."
+tier: core

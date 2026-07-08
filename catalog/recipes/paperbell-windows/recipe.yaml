@@ -1,0 +1,5 @@
+id: paperbell-windows
+version: 1.0.0
+title: "PaperBell manuscript (PDF, Windows fonts)"
+description: "The PaperBell manuscript preset with Windows-available fonts, for authors not on macOS."
+tier: core
