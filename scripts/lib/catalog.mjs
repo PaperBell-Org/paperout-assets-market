@@ -28,6 +28,13 @@ export function loadRecipeManifests(catalogDir) {
   return out;
 }
 
+/** Load catalog/assets.yaml → { <repo-relative-path>: { title, description } } (bilingual). */
+export function loadAssetDocs(catalogDir) {
+  const fp = path.join(catalogDir, 'assets.yaml');
+  if (!fs.existsSync(fp)) return {};
+  return YAML.parse(fs.readFileSync(fp, 'utf8')) ?? {};
+}
+
 export function loadBundleDefs(catalogDir) {
   const dir = path.join(catalogDir, 'bundles');
   const out = {};

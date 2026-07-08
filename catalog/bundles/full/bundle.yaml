@@ -1,5 +1,5 @@
 id: full
-version: 1.0.0
+version: 1.0.1
 title: Full Pandoc toolchain
 description: Complete defaults/csl/filters/templates set — the legacy all-in-one download. Paste its release URL into the plugin's "Pandoc assets URL".
 includeAll: true

@@ -26,6 +26,24 @@ this before opening a PR.
 A filter/template/csl only becomes downloadable once a **recipe** references it. Adding
 a recipe is what makes assets shippable.
 
+### Document every asset (required)
+
+Every filter/template/csl/include must have a one-line, **bilingual** (English +
+Chinese) `title` and `description` in [`catalog/assets.yaml`](catalog/assets.yaml), so
+the plugin can show what it does when a user opens it. CI fails if any asset is
+undocumented. Example:
+
+```yaml
+filters/xlsx_table.lua:
+  title:   { en: xlsx-table → three-line table, zh: xlsx 表格转三线表 }
+  description:
+    en: Converts fenced xlsx-table blocks into booktabs three-line tables, one per sheet.
+    zh: 把 xlsx-table 块按 sheet 转成 booktabs 三线表（纯 Lua，无外部依赖）。
+```
+
+Recipe `title`/`description` live in each `catalog/recipes/<id>/recipe.yaml` (also
+bilingual).
+
 ## Normalization invariants (enforced by CI)
 
 Your `defaults/*.yaml` **must**:

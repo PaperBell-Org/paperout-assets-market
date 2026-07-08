@@ -1,5 +1,10 @@
 id: paperbell-windows
-version: 1.0.0
-title: "PaperBell manuscript (PDF, Windows fonts)"
-description: "The PaperBell manuscript preset with Windows-available fonts, for authors not on macOS."
+version: 1.0.1
+title:
+  en: PaperBell manuscript (PDF, Windows fonts)
+  zh: PaperBell 手稿 (PDF, Windows 字体)
+description:
+  en: The PaperBell manuscript preset with Windows-available fonts, for authors
+    not on macOS.
+  zh: PaperBell 手稿预设的 Windows 字体版本，供非 macOS 用户使用。
 tier: core
