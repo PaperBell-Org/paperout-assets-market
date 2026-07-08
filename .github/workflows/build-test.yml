@@ -1,20 +1,13 @@
 name: Build test (full PDF/DOCX)
 
-# Heavy full-render build. Runs when a recipe/asset changes, and nightly. Installs
-# XeLaTeX, so it's slower than the PR "Validate" smoke test — the full render is the
-# authoritative proof each recipe produces a document.
+# Full-render build: installs XeLaTeX and produces a real PDF/DOCX per recipe.
+# Manual/on-demand only — NOT a PR gate. macOS-font recipes (Songti/Heiti, used by
+# paperbell/pdf/cover_letter/...) can't render on a standard Linux runner, so this
+# won't be fully green here. PRs rely on validate.yml's fingerprint smoke test
+# (which proves the filter chain runs and is reproducible). Run this from an
+# environment that has the required fonts (e.g. a macOS/self-hosted runner) for a
+# fully green full-render result.
 on:
-  pull_request:
-    paths:
-      - "filters/**"
-      - "templates/**"
-      - "csl/**"
-      - "defaults/**"
-      - "preamble.sty"
-      - "catalog/recipes/**"
-      - "scripts/build-recipe.mjs"
-  schedule:
-    - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:
