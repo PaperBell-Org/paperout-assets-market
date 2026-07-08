@@ -2,6 +2,14 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## 1.0.3 — 2026-07-08
+
+- Per-asset independent versioning: every asset/recipe/bundle carries its **own** semver
+  `version` (in `catalog/assets.yaml` and the manifests), decoupled from the release tag.
+  Assets reset to their true `1.0.0` (content unchanged since 1.0.0); the release tag is
+  now just a publish snapshot. Fixes all assets reporting the repo version. `check-versions`
+  now asserts semver validity instead of matching the tag.
+
 ## 1.0.2 — 2026-07-08
 
 - Add `cslStyles` to `index.json` — curated citation styles resolved on demand from the

@@ -102,9 +102,16 @@ existing **core** asset is scope-gated: CI (`check:pr-scope`) flags it, and it n
 
 ## Versioning
 
-Bump the `version` (semver) in your `recipe.yaml` / `bundle.yaml` when behavior changes
-— the plugin uses it for update detection. Leaf files (filters/templates/csl) are
-versioned automatically from the git tag that last modified them.
+Every asset has its **own** semver `version`, independent of the repository's release
+tag. Bump an asset's version only when **that asset** changes:
+
+- recipes / bundles → the `version` in `recipe.yaml` / `bundle.yaml`
+- filters / templates / csl → the `version` in `catalog/assets.yaml`
+
+The plugin uses these per-asset versions for update detection, so an unchanged filter
+keeps its version even when the repo cuts a new release. The repository's **release tag**
+is just a publish snapshot (where `index.json` and the bundle zips are hosted) — it does
+**not** need to match any asset version.
 
 ## Per-recipe README template
 
