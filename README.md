@@ -96,16 +96,111 @@ the plugin (which shows `title`/`description` and links back to the README).
 
 ---
 
-## Contributing
+## Contributor guide / 贡献者指引
 
-See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the fork + PR flow, the normalization
-invariants your `defaults/*.yaml` must obey, and the **quality-control contract**
-(every recipe ships a build-tested sample + golden fingerprint; dangerous Lua/LaTeX
-APIs are blocked; core assets are protected from accidental changes).
+Add a recipe, filter, template, or citation style via fork + pull request. Full rules
+are in **[CONTRIBUTING.md](CONTRIBUTING.md)**; this is the hands-on walkthrough.
+
+通过 fork + PR 贡献配方、过滤器、模板或引用样式。完整规则见
+**[CONTRIBUTING.md](CONTRIBUTING.md)**;下面是手把手流程。
+
+### English
+
+**1. Set up**
+
+```bash
+# fork on GitHub, then:
+git clone https://github.com/<you>/paperout-assets-market
+cd paperout-assets-market
+npm ci
+```
+
+**2. Pick what to add** (easiest → most involved)
+
+- **A citation style** — add an id under `styles:` in `catalog/csl-styles.yaml` with a
+  bilingual title. Any id that exists at the root of the
+  [official CSL repo](https://github.com/citation-style-language/styles) works
+  (e.g. `nature-genetics`). No file to vendor.
+- **A filter / template** — drop the file in `filters/<name>.lua` or
+  `templates/<name>.tex`, then add an entry in `catalog/assets.yaml` with a `version`
+  (start at `1.0.0`) and a bilingual `title` + `description`.
+- **A full recipe** (a complete export preset) — add `defaults/<id>.yaml` (obeying the
+  invariants below) plus `catalog/recipes/<id>/` with `recipe.yaml` (bilingual
+  title/description + `version`), `README.md`, `preview.png` (a placeholder is fine),
+  and `sample/input.md` (a minimal note that exercises it). Then generate its golden.
+
+**3. Validate locally**
+
+```bash
+npm run validate         # invariants + every asset documented + index builds
+npm run scan:security    # blocks dangerous Lua/LaTeX APIs
+npm test                 # unit tests
+# only if you added a recipe (needs pandoc + pandoc-crossref):
+npm run build:recipe -- <id> --update-golden   # builds the sample, writes the golden fingerprint
+```
+
+**4. Open the PR.** CI runs the same checks plus a build-test. Adding new files is fine;
+modifying an existing **core** file needs a maintainer's `core-change` label.
+
+**Quality rules (CI enforces these)**
+
+- No dangerous APIs (`os.execute`, `io.popen`, `\write18`, …) without maintainer review.
+- Every asset needs a bilingual `title` + `description` — CI fails otherwise.
+- `defaults/*.yaml`: reference resources only via `${USERDATA}/…` (or `${.}/../…`), set
+  `data-dir: ${.}/..`, and keep `bibliography:` / `csl:` commented out.
+- Bump only the **changed** asset's own `version`.
+- Never commit personal identity assets (logos/signatures) — ship a placeholder.
 
 Assets carry a trust tier: **core** (officially maintained) or **community**
-(contributed, CI-checked, but the plugin flags them as unverified since their Lua runs
-on your machine).
+(contributed; CI-checked, but the plugin flags it as unverified since its Lua runs on
+the user's machine).
+
+### 中文
+
+**1. 准备环境**
+
+```bash
+# 先在 GitHub 上 fork,然后:
+git clone https://github.com/<你>/paperout-assets-market
+cd paperout-assets-market
+npm ci
+```
+
+**2. 选择要贡献的类型**(从易到难)
+
+- **引用样式(CSL)** —— 在 `catalog/csl-styles.yaml` 的 `styles:` 下加一个 id 和双语标题。
+  只要该 id 存在于[官方 CSL 库](https://github.com/citation-style-language/styles)根目录
+  即可(如 `nature-genetics`),无需上传文件。
+- **过滤器 / 模板** —— 把文件放进 `filters/<名字>.lua` 或 `templates/<名字>.tex`,然后在
+  `catalog/assets.yaml` 加一条:`version`(从 `1.0.0` 起)+ 双语 `title` + `description`。
+- **完整配方**(一套导出预设) —— 加 `defaults/<id>.yaml`(遵守下面的不变量)+
+  `catalog/recipes/<id>/`,内含 `recipe.yaml`(双语标题/说明 + `version`)、`README.md`、
+  `preview.png`(占位图即可)、`sample/input.md`(一份能跑通该配方的最小笔记),然后生成 golden。
+
+**3. 本地自检**
+
+```bash
+npm run validate         # 不变量 + 每个资产都有说明 + index 能构建
+npm run scan:security    # 拦截危险的 Lua/LaTeX API
+npm test                 # 单元测试
+# 仅当你加了配方(需要 pandoc + pandoc-crossref):
+npm run build:recipe -- <id> --update-golden   # 构建 sample,写入 golden 指纹
+```
+
+**4. 开 PR。** CI 会跑同样的检查外加构建测试。**新增**文件没问题;**修改**已有的 core
+文件需要维护者打 `core-change` 标签。
+
+**质量红线(CI 强制)**
+
+- 未经维护者审查,不得使用危险 API(`os.execute`、`io.popen`、`\write18` 等)。
+- 每个资产必须有双语 `title` + `description`,否则 CI 失败。
+- `defaults/*.yaml`:资源引用只能用 `${USERDATA}/…`(或 `${.}/../…`),设 `data-dir: ${.}/..`,
+  且 `bibliography:` / `csl:` 保持注释掉。
+- 只 bump **发生变化的**那个资产自己的 `version`。
+- 绝不提交个人身份资产(logo/签名)—— 用占位图代替。
+
+资产带信任分级:**core**(官方维护)或 **community**(社区贡献;经 CI 检查,但插件会提示未审核,
+因为其 Lua 会在用户本机运行)。
 
 ## License
 
