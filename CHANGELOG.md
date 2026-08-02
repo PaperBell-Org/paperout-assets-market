@@ -2,6 +2,28 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## 1.0.5 — 2026-08-02
+
+- Fix `! LaTeX Error: No counter 'none' defined.` when exporting a document whose **first
+  table has no caption**. Pandoc ≥ 3.9 wraps uncaptioned tables in `\def\LTcaptype{none}`,
+  which references a `none` counter that pandoc's *own* default template provides but our
+  custom templates did not. Added `\newcounter{none}` next to the `longtable` load in every
+  shipped template that loads it — `paperbell.latex`, `eisvogel.latex`, `scribe.tex`,
+  `cover_letter.latex`, `cover_letter_template.latex`, `responseletter.sty` — each bumped to
+  `1.0.1`, along with the bundles that carry them (`paperbell`, `paperbell-windows`, `pdf`,
+  `cover_letter`, `response-letter`, `full`). Backward compatible: older pandoc emits
+  `\LTcaptype{}` and never touches the counter. (Captioned tables never reproduced this,
+  which is why it shipped unnoticed.)
+- **Who this reaches:** the plugin only offers updates for assets it recorded in
+  `installed.json`. Users who installed via the legacy "paste a zip URL" path or a vault
+  sync have the files on disk but are **not** tracked, so they will not be offered this fix —
+  they must (re)install from the marketplace once. For a correctness fix, that is most users.
+
+## 1.0.4 — 2026-07-08
+
+- Docs-only publish snapshot: added the bilingual (EN + ZH) contributor guide to the README.
+  No asset content changed; all assets stayed at their own versions.
+
 ## 1.0.3 — 2026-07-08
 
 - Per-asset independent versioning: every asset/recipe/bundle carries its **own** semver

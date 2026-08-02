@@ -331,7 +331,7 @@ templates/base.tex:
     zh: header-includes 用的 LaTeX 前导片段，加载作者私有的数学/伪代码宏包（cleveref、natbib、subfig
       及自定义宏），路径写死到某台机器。
 templates/cover_letter.latex:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Cover-letter template
     zh: 投稿信模板
@@ -342,7 +342,7 @@ templates/cover_letter.latex:
     zh: 投稿信的 pandoc LaTeX 模板，基于 moderncv（classic/green）+ xeCJK；作者身份与期刊/标题由 pandoc
       变量和 cover_letter.lua 填入。
 templates/cover_letter_template.latex:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Standalone cover-letter template
     zh: 独立投稿信模板
@@ -362,7 +362,7 @@ templates/demo-reference.docx:
     zh: 二进制 Word 参考文档，提供 docx 导出所用的样式（Title、Abstract、Normal、Table 等），供 docx filters
       和 pandoc 套用。
 templates/eisvogel.latex:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Eisvogel template
     zh: Eisvogel 模板
@@ -393,7 +393,7 @@ templates/hwtemp.tex:
     zh: LaTeX 作业/习题集模板，带 fancyhdr 抬头（课程、姓名、截止日期）和数学宏，用 pandoc
       变量（$hwnum$/$due$/$body$）填充。
 templates/paperbell.latex:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: PaperBell manuscript template
     zh: PaperBell 论文模板
@@ -415,7 +415,7 @@ templates/proposal.latex:
     zh: H2020-MSCA-IF 提案的 LaTeX 模板：紧凑 article 版式、彩色章节标题（xelatex、Times New Roman），配合
       MSCA-tags.lua 使用。
 templates/responseletter.sty:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Response-letter package
     zh: 回复信宏包
@@ -436,7 +436,7 @@ templates/responseletter.template.tex:
     zh: 驱动 responseletter.sty 的 pandoc LaTeX 模板，把元数据（papertitle/authors/journal 等）传入
       \ResponseSetup 并输出信件正文。
 templates/scribe.tex:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: General pandoc LaTeX template
     zh: 通用 pandoc 模板
