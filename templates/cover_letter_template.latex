@@ -7,6 +7,7 @@
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{longtable}
+\newcounter{none} % pandoc >=3.9 wraps uncaptioned tables in \LTcaptype{none}; custom templates must define it (No counter 'none' defined)
 \usepackage[l3]{csvsimple}
 \usepackage{svg}
 \usepackage{lipsum} % 用于生成示例文本

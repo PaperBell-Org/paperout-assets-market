@@ -116,6 +116,7 @@
 \RequirePackage{booktabs}
 \RequirePackage{tabularx}
 \RequirePackage{longtable}   % pandoc 把带题注的表渲成 longtable；standalone 模板需自行加载
+\newcounter{none}            % pandoc >=3.9 给无题注表格发 \LTcaptype{none}，自定义模板需自行定义此计数器（否则 No counter 'none' defined）
 \RequirePackage{pdflscape}   % xlsx-table landscape:true 用 \begin{landscape}（拉手稿宽表进回复信时需要）
 \RequirePackage{adjustbox}
 
