@@ -357,6 +357,7 @@ $highlighting-macros$
 $endif$
 $if(tables)$
 \usepackage{longtable,booktabs,array}
+\newcounter{none} % pandoc >=3.9 wraps uncaptioned tables in \LTcaptype{none}; custom templates must define it (No counter 'none' defined)
 $if(multirow)$
 \usepackage{multirow}
 $endif$
