@@ -2,6 +2,16 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## 1.0.6 — 2026-08-03
+
+- Tooling: bump the CI toolchain to **pandoc 3.10.1 + pandoc-crossref 0.3.25** (was 3.8.2 /
+  0.3.22b) so validation runs the pandoc version users actually run — 3.8.2 emits the older
+  empty `\LTcaptype{}` for uncaptioned tables and could not reproduce the `No counter 'none'
+  defined` class of bug fixed in 1.0.5. All recipe goldens were regenerated with the new pair
+  and are byte-identical to the previous ones (no sample exercises the differing construct).
+  **No published asset changed** — every asset/bundle keeps its version; this release tag is
+  purely a publish snapshot.
+
 ## 1.0.5 — 2026-08-02
 
 - Fix `! LaTeX Error: No counter 'none' defined.` when exporting a document whose **first
