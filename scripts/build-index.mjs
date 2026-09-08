@@ -33,6 +33,10 @@ function listFiles(rel, { exts, recursive = false } = {}) {
       continue;
     }
     if (entry.name.startsWith('.')) continue;
+    // Word/LibreOffice owner files (~$foo.docx) appear next to a .docx that is open
+    // in an editor. They are not assets, and treating them as one fails validation
+    // on any machine where a maintainer has a template open.
+    if (entry.name.startsWith('~$')) continue;
     if (exts && !exts.some((e) => entry.name.endsWith(e))) continue;
     out.push(childRel);
   }

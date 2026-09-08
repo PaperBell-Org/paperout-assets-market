@@ -23,9 +23,11 @@
 // with Word-generated style ids and is the wrong starting point for a journal
 // submission.
 //
-// Target: Times New Roman 12 pt, double-spaced, left-aligned, no first-line indent,
-// 1-inch margins — what an English-language journal expects of a submitted manuscript,
-// and what leaves a co-author room to write in the margin.
+// Target: Times New Roman 12 pt, double-spaced, justified body, centred title, no
+// first-line indent, 1-inch margins, captions half a point below body size — what an
+// English-language journal expects of a submitted manuscript, and what leaves a
+// co-author room to write in the margin. The exact list the master applies is
+// documented in catalog/recipes/manuscript-obsidian/README.md; keep the two in sync.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -47,7 +49,7 @@ const SINGLE = '<w:spacing w:after="0" w:line="240" w:lineRule="auto"/>';
 // inherits from Normal and therefore picks up the body settings for free.
 const STYLES = {
   Normal: `<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/>` +
-    `<w:pPr>${DOUBLE}<w:jc w:val="left"/></w:pPr>` +
+    `<w:pPr>${DOUBLE}<w:jc w:val="both"/></w:pPr>` +
     `<w:rPr><w:rFonts w:ascii="${TNR}" w:hAnsi="${TNR}" w:eastAsia="${TNR}" w:cs="${TNR}"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style>`,
 
   // Pandoc's body style adds 9 pt of space above and below every paragraph. With
@@ -61,7 +63,7 @@ const STYLES = {
 
   Title: `<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/>` +
     `<w:next w:val="Author"/><w:link w:val="TitleChar"/><w:uiPriority w:val="10"/><w:qFormat/>` +
-    `<w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/><w:contextualSpacing/><w:jc w:val="left"/></w:pPr>` +
+    `<w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/><w:contextualSpacing/><w:jc w:val="center"/></w:pPr>` +
     `<w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:style>`,
 
   Author: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="Author"><w:name w:val="Author"/><w:basedOn w:val="Normal"/>` +
@@ -87,11 +89,11 @@ const STYLES = {
 
   Abstract: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="Abstract"><w:name w:val="Abstract"/>` +
     `<w:basedOn w:val="Normal"/><w:next w:val="Keywords"/><w:qFormat/>` +
-    `<w:pPr><w:spacing w:before="0" w:after="240" w:line="480" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr></w:style>`,
+    `<w:pPr><w:spacing w:before="0" w:after="240" w:line="480" w:lineRule="auto"/></w:pPr></w:style>`,
 
   Keywords: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="Keywords"><w:name w:val="Keywords"/>` +
     `<w:basedOn w:val="Normal"/><w:next w:val="BodyText"/><w:qFormat/>` +
-    `<w:pPr><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/></w:pPr></w:style>`,
+    `<w:pPr><w:spacing w:before="0" w:after="240" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr></w:style>`,
 
   // Pandoc's headings are 20/16/14 pt in a themed accent blue. A manuscript wants
   // black Times at modest sizes, distinguished by weight rather than colour.
@@ -102,21 +104,21 @@ const STYLES = {
   ImageCaption: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="ImageCaption"><w:name w:val="Image Caption"/>` +
     `<w:basedOn w:val="Caption"/>` +
     `<w:pPr><w:spacing w:before="120" w:after="240" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
-    `<w:rPr><w:i w:val="0"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>`,
+    `<w:rPr><w:i w:val="0"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>`,
 
   // Bold + keepNext so a table caption reads as a caption and stays with its table;
   // that contrast is what tells figure captions and table captions apart on the page.
   TableCaption: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="TableCaption"><w:name w:val="Table Caption"/>` +
     `<w:basedOn w:val="Caption"/>` +
     `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
-    `<w:rPr><w:i w:val="0"/><w:b/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>`,
+    `<w:rPr><w:i w:val="0"/><w:b/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>`,
 
   Figure: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="Figure"><w:name w:val="Figure"/>` +
     `<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="240" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr></w:style>`,
 
   Bibliography: `<w:style w:type="paragraph" w:styleId="Bibliography"><w:name w:val="Bibliography"/><w:basedOn w:val="Normal"/>` +
     `<w:next w:val="Bibliography"/><w:qFormat/>` +
-    `<w:pPr>${DOUBLE}<w:ind w:left="720" w:hanging="720"/></w:pPr></w:style>`,
+    `<w:pPr>${DOUBLE}<w:ind w:left="720" w:hanging="720"/><w:jc w:val="left"/></w:pPr></w:style>`,
 
   // Three-line (booktabs) table: rule above the header, under the header, and at the
   // foot — the convention in most journals, and what the PDF chain already produces.

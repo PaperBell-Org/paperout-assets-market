@@ -3,7 +3,8 @@
 
   用法：笔记 frontmatter 里 `lineno: true`（manuscript-obsidian 由 lineno_default.lua
   默认打开，写 `lineno: false` 可关）。
-  效果：Word 文档每页左侧显示行号（逐行编号，每页重新开始）。
+  效果：Word 文档左侧逐行显示行号，并且**跨页连续编号**（restart="continuous"）——
+  审稿意见按"第 137 行"指位置，每页从 1 重来会让这种引用失去意义。
 
   原理：在文档末尾注入一个连续分节符，其节属性包含行号设置。
   PDF 导出时此 filter 不生效（PDF 靠 LaTeX 的 lineno 包）。
@@ -70,7 +71,10 @@ function Pandoc(doc)
     "<w:p>\n  <w:pPr>\n    <w:sectPr>\n",
     '      <w:type w:val="continuous"/>\n',
     page ~= "" and ("      " .. page .. "\n") or "",
-    '      <w:lnNumType w:countBy="1" w:start="1" w:restart="newPage"/>\n',
+    -- 不写 w:start：Word 自己的行号对话框在"从 1 开始"时也不写这个属性，而渲染器
+    -- 对它的理解并不一致（LibreOffice 当成偏移量：start="1" 首行会显示 2）。省略
+    -- 就是两边都从 1 开始。restart="continuous" = 跨页连续编号，不每页重来。
+    '      <w:lnNumType w:countBy="1" w:restart="continuous"/>\n',
     "    </w:sectPr>\n  </w:pPr>\n</w:p>",
   })
 
