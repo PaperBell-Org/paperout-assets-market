@@ -55,7 +55,7 @@ Anything absent is simply omitted. `bibliography` and `csl` are injected by the 
 
 All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`). To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
 
-The committed master is generated, not hand-edited: `node scripts/mk-manuscript-reference.mjs` rebuilds it from pandoc's default reference doc plus the patches in that script, and `--check` (run in CI) asserts the committed binary still matches. If you change the shipped master, change the script.
+The committed master is generated, not hand-edited: `node scripts/mk-manuscript-reference.mjs` rebuilds it from pandoc's default reference doc plus the patches in that script, and `--check` (run in CI) asserts the committed file still holds what the script produces. If you change the shipped master, change the script.
 
 ## Attribution
 

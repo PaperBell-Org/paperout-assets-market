@@ -8,7 +8,13 @@
 //
 // Why derive instead of committing a hand-saved Word file: a .docx is an opaque
 // binary in review. Here the only reviewable artifact is the XML below, and --check
-// (run in CI) proves the committed binary is exactly what this source produces.
+// (run in CI) proves the committed file still holds exactly what this source produces.
+//
+// --check compares the zip's ENTRY CONTENT, not its bytes: deflate output differs
+// between zlib builds, so a byte comparison would fail on a CI runner for a file that
+// is materially identical. For the same reason the writer leaves the committed file
+// alone when the content already matches, so regenerating on a different machine does
+// not produce a diff that says nothing.
 //
 // Base choice: pandoc's default master already defines every style name the docx
 // filters address (Title, Author, Abstract, Abstract Title, Image Caption, Table
@@ -25,8 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readZip, writeZip, patchEntry } from './lib/docx.mjs';
-import { sha256 } from './lib/hash.mjs';
+import { readZip, writeZip, patchEntry, entriesEqual } from './lib/docx.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT = path.join(ROOT, 'templates', 'manuscript-reference.docx');
@@ -201,7 +206,7 @@ function build() {
   const entries = readZip(base);
   patchEntry(entries, 'word/styles.xml', patchStyles);
   patchEntry(entries, 'word/document.xml', patchDocument);
-  return writeZip(entries);
+  return entries;
 }
 
 try {
@@ -211,26 +216,45 @@ try {
   process.exit(2);
 }
 
-const built = build();
+const builtEntries = build();
+const rel = path.relative(ROOT, OUT);
+
+function committedEntries() {
+  if (!fs.existsSync(OUT)) return null;
+  try {
+    return readZip(fs.readFileSync(OUT));
+  } catch (e) {
+    console.error(`mk-manuscript-reference: ${rel} is not readable as a .docx — ${e.message}`);
+    process.exit(1);
+  }
+}
+
+const current = committedEntries();
+const matches = current !== null && entriesEqual(current, builtEntries);
 
 if (check) {
-  if (!fs.existsSync(OUT)) {
-    console.error(`mk-manuscript-reference: ${path.relative(ROOT, OUT)} is missing — run this script without --check.`);
+  if (current === null) {
+    console.error(`mk-manuscript-reference: ${rel} is missing — run this script without --check.`);
     process.exit(1);
   }
-  const committed = fs.readFileSync(OUT);
-  if (!committed.equals(built)) {
+  if (!matches) {
     console.error(
-      'mk-manuscript-reference: templates/manuscript-reference.docx does not match this script.\n' +
-        `  committed: ${sha256(committed)}\n` +
-        `  rebuilt:   ${sha256(built)}\n` +
+      `mk-manuscript-reference: ${rel} does not match this script.\n` +
         '  Re-run `node scripts/mk-manuscript-reference.mjs` and commit the result.\n' +
-        '  (Pandoc version differences in the base master can also cause this.)'
+        '  (A pandoc version change in the base reference.docx can also cause this.)'
     );
+    for (const part of ['word/styles.xml', 'word/document.xml']) {
+      const a = current.find((x) => x.name === part);
+      const b = builtEntries.find((x) => x.name === part);
+      if (a && b && !a.data.equals(b.data)) console.error(`  differs: ${part}`);
+    }
     process.exit(1);
   }
-  console.error(`mk-manuscript-reference: committed master matches (${sha256(built).slice(0, 12)}…)`);
+  console.error(`mk-manuscript-reference: committed master matches (${builtEntries.length} parts)`);
+} else if (matches) {
+  console.error(`mk-manuscript-reference: ${rel} already up to date — left unchanged`);
 } else {
-  fs.writeFileSync(OUT, built);
-  console.error(`mk-manuscript-reference: wrote templates/manuscript-reference.docx (${built.length} bytes, ${sha256(built).slice(0, 12)}…)`);
+  const buf = writeZip(builtEntries);
+  fs.writeFileSync(OUT, buf);
+  console.error(`mk-manuscript-reference: wrote ${rel} (${buf.length} bytes, ${builtEntries.length} parts)`);
 }

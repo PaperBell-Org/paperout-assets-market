@@ -15,9 +15,10 @@ different. This release finishes it.
   1-inch margins, three-line tables, and named styles for the whole title block
   (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`,
   `Keywords`). It is **generated**, not hand-saved: `scripts/mk-manuscript-reference.mjs`
-  derives it deterministically from pandoc's own default reference doc plus a set of
-  reviewable XML patches, and `--check` (wired into CI) asserts the committed binary
-  still matches its source. `templates/demo-reference.docx` is unchanged and
+  derives it from pandoc's own default reference doc plus a set of reviewable XML
+  patches, and `--check` (wired into CI) asserts the committed file still holds what
+  that source produces — comparing zip entry content rather than bytes, since deflate
+  output is not stable across zlib builds. `templates/demo-reference.docx` is unchanged and
   `demo-obsidian` keeps using it.
 
 - **`filters/manuscript-docx.lua` → 1.1.0.** Fixes a crash: the guard on

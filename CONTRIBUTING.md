@@ -82,11 +82,16 @@ Generate/refresh a fingerprint with `npm run build:recipe -- <id> --update-golde
 A `.docx` reference master is opaque in review, so a binary that ships as a *core* asset
 should be derived by a committed script rather than hand-saved from Word.
 `templates/manuscript-reference.docx` is the reference case: `npm run
-mk:manuscript-reference` rebuilds it deterministically from pandoc's own default
-reference doc plus a set of XML patches held in the script, and CI runs
-`node scripts/mk-manuscript-reference.mjs --check` to assert the committed bytes still
-match. That way the reviewable diff is the patch list, not the blob. If you change such a
-master, change its generator.
+mk:manuscript-reference` rebuilds it from pandoc's own default reference doc plus a set
+of XML patches held in the script, and CI runs
+`node scripts/mk-manuscript-reference.mjs --check` to assert the committed file still
+holds what the script produces. That way the reviewable diff is the patch list, not the
+blob. If you change such a master, change its generator.
+
+The check compares the zip's **entry content**, not its bytes — deflate output varies
+between zlib builds, so two materially identical .docx files can differ byte for byte
+across machines. For the same reason the generator leaves the committed file alone when
+the content already matches, so regenerating never produces an empty-looking diff.
 
 (This does not apply to a personal or third-party template you are vendoring — commit
 those directly and record provenance in `NOTICE`.)

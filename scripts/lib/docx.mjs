@@ -2,9 +2,13 @@
 //
 // A .docx is a zip. We derive `templates/manuscript-reference.docx` from pandoc's
 // own default master by patching two XML parts, so we need to read a zip and write
-// one back byte-reproducibly: same entry order, fixed timestamps, fixed deflate
-// level. That reproducibility is what lets CI assert the committed binary still
-// matches the (reviewable, text) patches that produced it.
+// one back with a fixed entry order and fixed timestamps.
+//
+// Note what is NOT guaranteed: byte-identical output across machines. Deflate is not
+// a fixed function — zlib's exact bit stream varies between versions, so the same
+// entries compressed on macOS and on a CI runner differ in bytes while decompressing
+// to identical content. Callers that need to verify a committed .docx must therefore
+// compare ENTRY CONTENT (see entriesEqual), not file hashes.
 //
 // Scope: stored/deflated entries, no zip64, no encryption — everything pandoc emits.
 
@@ -142,6 +146,20 @@ export function writeZip(entries) {
   eocd.writeUInt16LE(0, 20);
 
   return Buffer.concat([...chunks, cdBuf, eocd]);
+}
+
+/**
+ * Compare two zips by content: same entry names in the same order, same bytes in each.
+ * This is the meaningful equality for a generated .docx — it ignores which zlib build
+ * did the compressing.
+ */
+export function entriesEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].name !== b[i].name) return false;
+    if (!a[i].data.equals(b[i].data)) return false;
+  }
+  return true;
 }
 
 /** Replace one entry's bytes, erroring if the part is missing (a silent no-op patch is worse). */
