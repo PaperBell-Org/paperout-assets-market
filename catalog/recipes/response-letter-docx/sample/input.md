@@ -42,7 +42,10 @@ references:
 > Please give the exact interval used.
 
 > [!response]
-> Done — 95% intervals throughout.
+> Done — 95% intervals throughout. The distribution is shown below; this figure is the
+> letter's own, not one from the manuscript.
+>
+> ![Posterior intervals for each basin.](fig.png)
 
 > [!manuscript] page=5, sline=158, eline=160
 > Estimates are reported with 95% intervals.

@@ -53,7 +53,7 @@ The locator on the title bar is built the same way the PDF builds it: `Manuscrip
 
 ## How to write the letter
 
-```markdown
+````markdown
 > [!reviewer] Reviewer #1
 > The model specification is not clear enough to reproduce.
 >
@@ -71,11 +71,13 @@ The locator on the title bar is built the same way the PDF builds it: `Manuscrip
 
 > [!manuscript] page=5, sline=158, eline=160
 > Or paste the revised text and give the locator by hand.
-```
+````
 
 Callout aliases: `reviewer` / `rc` / `quote` / `comment` / `question` for comments, `response` / `ar` / `reply` for responses, `manuscript` / `ms` / `revision` for manuscript text. A bare `**Response:**` paragraph also works.
 
 Everything that exists only for the draft is stripped on export: `**中文翻译：**` paragraphs, `%% … %%` and `<!-- … -->` comments, `#TODO` lines, *Evidence* notes, `{difficulty=… status=…}` markers and `![[embeds]]`.
+
+The letter's own figures are written as ordinary markdown images; they are numbered by Word, not by the manuscript's numbering.
 
 ### Quoting the manuscript instead of pasting it
 

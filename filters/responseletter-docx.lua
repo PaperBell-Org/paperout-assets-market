@@ -455,14 +455,21 @@ function Pandoc(doc)
     end
   end
 
-  -- emit response paragraphs: the first carries the hanging "AR:" label (the PDF
-  -- route's wording), the rest are unlabelled but stay aligned with it
-  local function emit_ar(paras)
-    for pi, p in ipairs(paras) do
-      if pi == 1 then
-        out:insert(labelled(STYLE.ar, STYLE.ar_label, 'AR:', p))
+  -- 排一段 callout 正文：第一段带悬挂标签，后续段落用续段样式对齐，
+  -- 非段落块（图、表、列表…）按原顺序放行 —— 之前这里只收 Para，
+  -- 回复里插一张图会被静默吃掉（pandoc 会把独立成段的图变成 Figure 块）。
+  local function emit_body(body, style, cont_style, label_style, label)
+    local labelled_done = false
+    for _, b in ipairs(body) do
+      if b.t == 'Para' or b.t == 'Plain' then
+        if labelled_done then
+          out:insert(styled_para(cont_style, b.content))
+        else
+          out:insert(labelled(style, label_style, label, b.content))
+          labelled_done = true
+        end
       else
-        out:insert(styled_para(STYLE.ar_cont, p))
+        out:insert(b)
       end
     end
   end
@@ -496,13 +503,13 @@ function Pandoc(doc)
     -- 3. author response written as a callout
     elseif kind and CALLOUT_AR[kind] then
       local _, body1 = split_first(firstblk.content)
-      local paras = {}
-      if #body1 > 0 then paras[#paras + 1] = body1 end
+      local body = pandoc.List()
+      if #body1 > 0 then body:insert(pandoc.Para(body1)) end
       for bi = 2, #content do
         local b = content[bi]
-        if b.t == 'Para' or b.t == 'Plain' then paras[#paras + 1] = b.content end
+        if not is_drop_aid(b) then body:insert(b) end
       end
-      emit_ar(paras)
+      emit_body(body, STYLE.ar, STYLE.ar_cont, STYLE.ar_label, 'AR:')
       local j = i + 1
       while j <= #blocks and is_drop_aid(blocks[j]) do j = j + 1 end
       i = j
@@ -512,30 +519,35 @@ function Pandoc(doc)
       local title, body1 = split_first(firstblk.content)
       if not has_md_headings then emit_heading(utils.stringify(title)) end
 
-      local body_paras = {}
-      if #body1 > 0 then body_paras[#body_paras + 1] = body1 end
+      local body = pandoc.List()
+      if #body1 > 0 then body:insert(pandoc.Para(body1)) end
       for bi = 2, #content do
         local b = content[bi]
         if b.t == 'HorizontalRule' then
           -- separator before the Chinese translation; skip
         elseif (b.t == 'Para' or b.t == 'Plain') then
           if not strip_zh_label(b.content) then          -- drop the 中文翻译 para
-            body_paras[#body_paras + 1] = b.content
+            body:insert(b)
           end
+        elseif not is_drop_aid(b) then
+          body:insert(b)                                 -- 图、表、列表原样放行
         end
-      end
-      if #body_paras > 0 then
-        body_paras[1] = strip_leading_remarks(body_paras[1])
-        body_paras[#body_paras] = strip_rc_opts(body_paras[#body_paras])
       end
 
-      for pi, p in ipairs(body_paras) do
-        if pi == 1 then
-          out:insert(labelled(STYLE.rc, STYLE.rc_label, 'RC:', p))
-        else
-          out:insert(styled_para(STYLE.rc_cont, p))
+      -- 第一段去掉 "(Remarks to the Author)" 样板，最后一段去掉 {difficulty=… status=…}
+      local first_para, last_para
+      for idx, b in ipairs(body) do
+        if b.t == 'Para' or b.t == 'Plain' then
+          first_para = first_para or idx
+          last_para = idx
         end
       end
+      if first_para then
+        body[first_para] = pandoc.Para(strip_leading_remarks(body[first_para].content))
+        body[last_para] = pandoc.Para(strip_rc_opts(body[last_para].content))
+      end
+
+      emit_body(body, STYLE.rc, STYLE.rc_cont, STYLE.rc_label, 'RC:')
       i = i + 1
 
     -- 5. author response written as a bare **Response:** paragraph

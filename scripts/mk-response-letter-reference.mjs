@@ -39,8 +39,9 @@ const BODY_SPACING = '<w:spacing w:before="0" w:after="120" w:line="240" w:lineR
 // RC:/AR: labels hang in the left margin (1 cm = 567 twips).
 const HANG = '<w:ind w:left="567" w:hanging="567"/>';
 
+const sansFace = `<w:rFonts w:ascii="${SANS}" w:hAnsi="${SANS}" w:cs="${SANS}"/>`;
 const sans = (sz, extra = '') =>
-  `<w:rFonts w:ascii="${SANS}" w:hAnsi="${SANS}" w:cs="${SANS}"/>${extra}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
+  `${sansFace}${extra}<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
 
 function para(id, name, body, { added = false } = {}) {
   const custom = added ? ' w:customStyle="1"' : '';
@@ -174,8 +175,10 @@ const STYLES = {
     `<w:rPr><w:i w:val="0"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>`),
 
   // Character styles for the hanging labels, so the filter never hard-codes a colour.
-  RCLabel: charStyle('RCLabel', 'RC Label', `${sans(22, '<w:b/>')}<w:color w:val="${PRIMARY}"/>`),
-  ARLabel: charStyle('ARLabel', 'AR Label', `${sans(22, '<w:b/>')}<w:color w:val="${PRIMARY}"/>`),
+  // Deliberately no <w:sz>: the same label styles are used in the 11 pt body and in
+  // the 9 pt legend, so they have to inherit the size of whatever line they sit on.
+  RCLabel: charStyle('RCLabel', 'RC Label', `${sansFace}<w:b/><w:color w:val="${PRIMARY}"/>`),
+  ARLabel: charStyle('ARLabel', 'AR Label', `${sansFace}<w:b/><w:color w:val="${PRIMARY}"/>`),
   // "Manuscript" stays bold; the "· Page 5, Line 158–160" half does not.
   ManuscriptLocator: charStyle('ManuscriptLocator', 'Manuscript Locator',
     `${sans(18)}<w:b w:val="0"/><w:color w:val="FFFFFF"/>`),
@@ -198,25 +201,25 @@ const DOC_DEFAULTS =
 
 function patchStyles(xml) {
   let out = xml;
-  out = replaceOne(out, /<w:docDefaults>[\s\S]*?<\/w:docDefaults>/, DOC_DEFAULTS, 'docDefaults');
+  out = replace(out, /<w:docDefaults>[\s\S]*?<\/w:docDefaults>/, DOC_DEFAULTS, 'docDefaults');
 
   // Theme fonts resolve to Aptos/Calibri via theme1.xml; pin them so a style we did
   // not rewrite still lands in the right family.
-  out = replaceAll(out, /w:asciiTheme="(?:major|minor)HAnsi"/g, `w:ascii="${SERIF}"`, 'ascii theme font');
-  out = replaceAll(out, /w:hAnsiTheme="(?:major|minor)HAnsi"/g, `w:hAnsi="${SERIF}"`, 'hAnsi theme font');
-  out = replaceAll(out, /w:eastAsiaTheme="(?:major|minor)EastAsia"/g, `w:eastAsia="${SERIF}"`, 'eastAsia theme font');
-  out = replaceAll(out, /w:cstheme="(?:major|minor)Bidi"/g, `w:cs="${SERIF}"`, 'cs theme font');
+  out = replace(out, /w:asciiTheme="(?:major|minor)HAnsi"/g, `w:ascii="${SERIF}"`, 'ascii theme font');
+  out = replace(out, /w:hAnsiTheme="(?:major|minor)HAnsi"/g, `w:hAnsi="${SERIF}"`, 'hAnsi theme font');
+  out = replace(out, /w:eastAsiaTheme="(?:major|minor)EastAsia"/g, `w:eastAsia="${SERIF}"`, 'eastAsia theme font');
+  out = replace(out, /w:cstheme="(?:major|minor)Bidi"/g, `w:cs="${SERIF}"`, 'cs theme font');
   // Pandoc's themed heading colour; the letter uses its own primary instead.
-  out = replaceAll(out, /<w:color w:val="0F4761"[^/]*\/>/g, '', 'themed heading colour');
+  out = replace(out, /<w:color w:val="0F4761"[^/]*\/>/g, '', 'themed heading colour');
 
   for (const [id, body] of Object.entries(STYLES)) {
     if (ADDED.includes(id)) continue;
     const re = new RegExp(`<w:style\\b[^>]*w:styleId="${id}"[^>]*>[\\s\\S]*?<\\/w:style>`);
-    out = replaceOne(out, re, body, `style ${id}`);
+    out = replace(out, re, body, `style ${id}`);
   }
 
   const additions = ADDED.map((id) => STYLES[id]).join('');
-  out = replaceOne(out, /<\/w:styles>/, additions + '</w:styles>', 'styles close tag');
+  out = replace(out, /<\/w:styles>/, additions + '</w:styles>', 'styles close tag');
   return out;
 }
 
@@ -228,18 +231,16 @@ const SECT_PR =
   '</w:sectPr>';
 
 function patchDocument(xml) {
-  return replaceOne(xml, /<w:sectPr>[\s\S]*?<\/w:sectPr>/, SECT_PR, 'sectPr');
+  return replace(xml, /<w:sectPr>[\s\S]*?<\/w:sectPr>/, SECT_PR, 'sectPr');
 }
 
 // A patch that matches nothing is the failure mode that produces a plausible-looking
 // but wrong master, so every replacement asserts it fired — the global ones too.
-function replaceOne(haystack, re, replacement, what) {
+// One function covers both: a /g regex replaces every hit, a plain one the first.
+function replace(haystack, re, replacement, what) {
+  re.lastIndex = 0;                       // .test() advances lastIndex on /g regexes
   if (!re.test(haystack)) throw new Error(`patch target not found: ${what}`);
-  return haystack.replace(re, () => replacement);
-}
-
-function replaceAll(haystack, re, replacement, what) {
-  if (!re.test(haystack)) throw new Error(`patch target not found: ${what}`);
+  re.lastIndex = 0;
   return haystack.replace(re, () => replacement);
 }
 

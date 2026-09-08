@@ -59,9 +59,18 @@ the manuscript. Closes #19 and #21.
   `{difficulty=… status=…}` marker, so the golden covers both what is rendered and what
   is stripped.
 
+- **Figures, tables and lists inside a callout are no longer dropped.** Both callout
+  branches only kept `Para` blocks, and pandoc turns an image that stands alone in a
+  paragraph into a `Figure` — so a figure inside a `> [!response]` vanished from the
+  Word file without a warning. Non-paragraph blocks now pass through in document
+  order; draft-only aids are still stripped. Found by adding the letter-local figure
+  the spec asked for to the sample, which now covers it.
+
 - The recipe README documents the whole style sheet, how to write each callout, how to
   quote the manuscript by id, and the three known gaps (xlsx tables, `R1`/`R2` figure
-  numbering, draft mode being PDF-only).
+  numbering, draft mode being PDF-only). Its `RC Label` / `AR Label` character styles
+  deliberately carry no font size: the same styles label 11 pt body paragraphs and the
+  9 pt legend line, so they have to inherit the size of the line they sit on.
 
 - **`filters/manuscript_include.lua` → 1.0.1.** Its figure-renumbering step emits
   `RawBlock('latex', …)`, which the docx writer drops silently. Now that the filter is
