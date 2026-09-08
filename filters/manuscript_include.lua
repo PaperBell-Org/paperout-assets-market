@@ -336,6 +336,9 @@ local function number_figure(bl)
   local num = (id and id ~= '') and fig_numbers()[id] or nil
   if not num then return pandoc.List{ bl } end
   local clean = bl:clone(); clean.identifier = ''       -- 去 \label{fig:x}：号会被覆盖、免重复定义
+  -- 编号覆盖只有 LaTeX 有：docx writer 会静默丢掉 RawBlock('latex')，不加这个守卫
+  -- 会让人以为 Word 里拉进来的手稿图也保留了原编号。Word 侧的编号见 issue #22。
+  if not (FORMAT and FORMAT:match('latex')) then return pandoc.List{ clean } end
   -- \addtocounter{figure}{-1}：\caption 会把 figure 计数器 +1，减回来，
   -- 免得拉进来的手稿图占用回复信自有图的 R 序号。
   return pandoc.List{
