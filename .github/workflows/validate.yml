@@ -43,5 +43,8 @@ jobs:
       - name: Install pandoc + pandoc-crossref
         run: bash .github/scripts/install-pandoc.sh
 
+      - name: Reference master matches its generator
+        run: node scripts/mk-manuscript-reference.mjs --check
+
       - name: Build-test recipes (fingerprint smoke + golden)
         run: node scripts/build-recipe.mjs --all

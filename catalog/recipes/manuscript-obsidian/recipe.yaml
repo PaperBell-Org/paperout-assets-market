@@ -1,11 +1,12 @@
 id: manuscript-obsidian
-version: 1.0.0
+version: 1.1.0
 title:
   en: Manuscript (Word)
   zh: 手稿 (Word)
 description:
-  en: "Full manuscript to Word (.docx): figures at end, line numbers, CJK
-    formatting, full-width tables, cross-references and citations, using a
-    reference-doc template."
-  zh: 完整手稿导出 Word（.docx）：图集中到末尾、行号、CJK 排版、全宽表格、交叉引用与文献，使用 reference-doc 模板。
+  en: "Manuscript to Word (.docx) in English-journal layout: Times New Roman 12 pt,
+    double-spaced, line numbers on by default, title/author/affiliation/abstract
+    block, cross-references and citations. Figures and tables can optionally be
+    moved to the end."
+  zh: 手稿导出英文期刊投稿版式的 Word（.docx）：Times New Roman 12pt、双倍行距、默认带行号、标题/作者/机构/摘要抬头、交叉引用与文献；图表可选后置。
 tier: core

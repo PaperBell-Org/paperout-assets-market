@@ -62,11 +62,22 @@ local NEED_SPACE_AFTER = {
   [string.byte("?")] = true, [string.byte("!")] = true,
 }
 
+-- 这个 filter 的职责是中英混排。规则 (e)（英文标点后补空格）在纯英文串里只会帮倒忙：
+-- 它会把 song@gea.mpg.de 拆成 song@gea. mpg. de、把 doi:10.1038/x 拆成 doi: 10.1038/x。
+-- 所以 (e) 只在这一串确实含汉字时才生效；纯英文段落原样通过。
+local function has_han(cps)
+  for _, cp in ipairs(cps) do
+    if is_han(cp) then return true end
+  end
+  return false
+end
+
 -- ========== 核心：codepoint 级处理 ==========
 local function process_str(s)
   local cps = {}
   for _, c in utf8.codes(s) do cps[#cps+1] = c end
   local out = {}
+  local han_context = has_han(cps)
 
   for i, cp in ipairs(cps) do
     local prev = cps[i-1]
@@ -125,8 +136,8 @@ local function process_str(s)
         out[#out+1] = " "
       end
 
-      -- (e) 英文标点后补空格
-      if prev and NEED_SPACE_AFTER[prev] and is_alnum(cp) then
+      -- (e) 英文标点后补空格（仅中英混排语境，见 has_han）
+      if han_context and prev and NEED_SPACE_AFTER[prev] and is_alnum(cp) then
         -- 排除: 前面是数字相关的 . 或 ,（小数 / 千分位）
         local pprev = cps[i-2]
         if not (is_digit(cp) and (prev == string.byte(".") or prev == string.byte(","))
@@ -149,7 +160,17 @@ local function process_str(s)
 end
 
 -- ========== Str 级处理 ==========
+
+-- 邮箱、URL、DOI 这类机器可读的记号整段跳过：里面的 . : / 是语法而不是标点，
+-- 任何"补空格"都是破坏。通讯作者邮箱正是走这条路。
+local function is_machine_token(text)
+  return text:find("@", 1, true) ~= nil
+      or text:find("://", 1, true) ~= nil
+      or text:lower():find("doi:", 1, true) ~= nil
+end
+
 function Str(el)
+  if is_machine_token(el.text) then return el end
   el.text = process_str(el.text)
   return el
 end
