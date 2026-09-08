@@ -40,6 +40,24 @@ jobs:
       - name: Build index.json
         run: node scripts/build-index.mjs --tag "${GITHUB_REF#refs/tags/}" --out dist/index.json
 
+      # Unversioned aliases. The zips are named <id>-<version>.zip, so the
+      # "stable" URL a user pastes into the plugin (…/releases/latest/download/
+      # full.zip, per README) never existed, and a URL pinned to the versioned
+      # name 404s as soon as that bundle's version moves. Ship both names: the
+      # versioned one stays what index.json points at (sha256 is pinned to it),
+      # the alias is what a human keeps in their settings.
+      - name: Add unversioned bundle aliases
+        run: |
+          shopt -s nullglob
+          for z in dist/*.zip; do
+            base="$(basename "$z" .zip)"
+            id="${base%-*.*.*}"
+            if [ "$id" != "$base" ]; then
+              cp "$z" "dist/${id}.zip"
+              echo "alias: ${id}.zip -> ${base}.zip"
+            fi
+          done
+
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ github.token }}

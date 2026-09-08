@@ -92,6 +92,15 @@ different. This release finishes it.
 
 - `package.json` gains `check:versions`; `validate.yml` gains the master `--check` step.
 
+- **Releases now publish an unversioned alias for every bundle** (`full.zip` beside
+  `full-1.0.2.zip`). The README has always told users to paste
+  `…/releases/latest/download/full.zip` into the plugin, and that file never existed —
+  the assets were only ever `<id>-<version>.zip`, so anyone who worked around it by
+  pinning the versioned URL would have started getting 404s the moment a bundle version
+  moved, which is exactly what this release does to `full`, `manuscript-obsidian` and
+  `demo-obsidian`. `index.json` keeps pointing at the versioned name, which is what the
+  `sha256` is pinned to.
+
 ## 1.0.6 — 2026-08-03
 
 - Tooling: bump the CI toolchain to **pandoc 3.10.1 + pandoc-crossref 0.3.25** (was 3.8.2 /
