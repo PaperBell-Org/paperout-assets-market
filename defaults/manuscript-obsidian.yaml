@@ -1,22 +1,30 @@
-from: markdown+pipe_tables+table_captions+link_attributes+wikilinks_title_after_pipe
+from: markdown+pipe_tables+table_captions+link_attributes+wikilinks_title_after_pipe+mark+tex_math_single_backslash+autolink_bare_uris
 to: docx
 standalone: true
 
 # 指定 Pandoc 数据目录：当前 defaults 文件夹的上一级，即 pandoc 目录
 data-dir: "${.}/.."
 
-# Word 样式模板（manuscript-reference.docx 暂缺，先用 demo-reference.docx 占位）
-reference-doc: "${.}/../templates/demo-reference.docx"
+# Word 样式模板：英文期刊投稿版式（Times New Roman 12pt、双倍行距、左对齐、
+# 无首行缩进、1 英寸页边距）。由 scripts/mk-manuscript-reference.mjs 生成。
+reference-doc: "${.}/../templates/manuscript-reference.docx"
 
 # 全局引文库（${USERDATA} = pandoc 目录；本仓库 mybib.bib 在 00 - Obsidian/mybib.bib）
 # bibliography: "${USERDATA}/../../mybib.bib"  # (commented by sync: plugin injects --bibliography)
 
-# 过滤器顺序（与 PR 217 demo-obsidian.yaml 一致，仅 demo-docx → manuscript-docx）：
-# 1. pandoc-crossref 先处理图、表、公式编号与交叉引用
-# 2. manuscript-docx.lua 把标题/作者/单位/通讯邮箱/摘要/关键词从 metadata 插入正文
-# 3. citeproc 处理正文与插入内容中的文献引用（含摘要内引用）
-# 4. 后续 Lua 做图表后置、行号、空格/标点清洗、表格宽度
+# 过滤器顺序：
+# 1. div / block_ids —— 先清掉 Obsidian 私有语法（hidden Div、%% 批注、段末 ^blockid），
+#    否则它们会原样印进发给合作者的 Word。两者都与输出格式无关，PDF 链上一直都有。
+# 2. lineno_default —— 行号默认开（笔记里写 lineno: false 可关），与 PDF 链一致；
+#    投稿稿和给合作者批注的稿子都需要行号。
+# 3. pandoc-crossref 处理图、表、公式编号与交叉引用
+# 4. manuscript-docx.lua 用母版的命名样式排出标题/作者/单位/通讯/摘要/关键词抬头
+# 5. citeproc 处理正文与插入内容中的文献引用（含摘要内引用）
+# 6. 后续 Lua 做图表后置、行号注入、空格/标点清洗、表格宽度
 filters:
+  - "${.}/../filters/div.lua"
+  - "${.}/../filters/block_ids.lua"
+  - "${.}/../filters/lineno_default.lua"
   - pandoc-crossref
   - "${.}/../filters/manuscript-docx.lua"
   - citeproc
@@ -30,10 +38,18 @@ metadata:
   link-citations: false
   link-bibliography: false
 
+  # 参考文献段落的标题，与 PDF 链（paperbell.yaml）一致
+  reference-section-title: References
+
+  # NOTE: pandoc 只在 template / reference-doc / filters / csl 这类"路径键"上展开
+  # ${USERDATA}，metadata 里的值是字面量，pandoc-crossref 打不开就静默用内置默认。
+  # 所以这一行目前不生效（PDF 链同样如此，见 issue），真正起作用的是下面内联的前缀。
+  crossrefYaml: ${USERDATA}/defaults/crossref.yaml
+
   # 可在单篇文档 YAML 中打开：
-  # lineno: true
   # figures-at-end: true
   # tables-at-end: true
+  # 关行号：lineno: false
 
   # 章节标题设置
   chapters: false
@@ -41,19 +57,42 @@ metadata:
   numberSections: false
   chapDelim: "-"
 
-  # 图表前缀设置
-  figureTitle: "Fig"
-  figPrefix: "Fig"
-  tableTitle: "Tab"
-  tblPrefix: "Tab"
+  # 图表前缀：期刊写法。写成列表才有复数形式 —— 标量会让 [@fig:a;@fig:b] 渲染成
+  # "Figure 1, 2" 而不是 "Figures 1, 2"。
+  figureTitle: "Figure"
+  figPrefix: ["Figure", "Figures"]
+  tableTitle: "Table"
+  tblPrefix: ["Table", "Tables"]
+  # 公式引用保持 pandoc-crossref 的默认（"eq. 1"），与 PDF 链现状一致：
+  # eqnPrefixTemplate 只有从 crossref 自己的 YAML 文件读进去才会做变量替换，
+  # 走 pandoc metadata 会原样印出 "($$i$$)"。
+
+  # 行号分节符的页面设置。lineno-docx.lua 注入的 sectPr 是文档第一个 sectPr，
+  # 因此它定义正文那一节；母版的 sectPr 只剩末尾空节可管，而节属性不向后继承。
+  # 这几个值必须与 scripts/mk-manuscript-reference.mjs 的 SECT_PR 保持一致
+  # （Letter 12240×15840，1 英寸 = 1440 twips）。
+  docxPage:
+    width: 12240
+    height: 15840
+    top: 1440
+    right: 1440
+    bottom: 1440
+    left: 1440
+    header: 720
+    footer: 720
 
 # ============================================================
-# manuscript-obsidian.yaml —— 学术稿件版（带作者/单位/通讯邮箱）
+# manuscript-obsidian.yaml —— 英文期刊投稿稿（Word）
 #
-# 与 demo-obsidian.yaml 区别：
-# - 走 manuscript-docx.lua 而非 demo-docx.lua，输出标题+作者+上标编号
-#   +单位列表+通讯邮箱+摘要+关键词的标准期刊投稿头部排版
-# - 适合 longform 编译产物（带 authors/affiliations frontmatter）
+# 用途：把 Obsidian / Longform 的手稿导成可以直接发给合作者批注、
+# 或作为 submission 上传的 .docx。
 #
-# manuscript-reference.docx 暂未到位，临时复用 demo-reference.docx
+# 与 demo-obsidian.yaml 的区别：
+# - 走 manuscript-docx.lua 而非 demo-docx.lua，输出标题 + 作者（上标机构编号）
+#   + 机构列表 + 通讯邮箱 + 摘要 + 关键词的标准投稿抬头
+# - 用 manuscript-reference.docx（英文投稿版式）而非 demo-reference.docx（中文论文版式）
+# - 带 Obsidian 语法清理与默认行号
+#
+# 版式全部由 reference-doc 决定：要换一本刊物的字体 / 行距 / 页边距，
+# 复制 templates/manuscript-reference.docx 改样式即可，不用动 filter。
 # ============================================================

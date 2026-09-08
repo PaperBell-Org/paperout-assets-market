@@ -77,18 +77,37 @@ silently changing everyone else's output.
 
 Generate/refresh a fingerprint with `npm run build:recipe -- <id> --update-golden`.
 
-### 2. No dangerous APIs
+### 2. Generated binaries carry their generator
+
+A `.docx` reference master is opaque in review, so a binary that ships as a *core* asset
+should be derived by a committed script rather than hand-saved from Word.
+`templates/manuscript-reference.docx` is the reference case: `npm run
+mk:manuscript-reference` rebuilds it from pandoc's own default reference doc plus a set
+of XML patches held in the script, and CI runs
+`node scripts/mk-manuscript-reference.mjs --check` to assert the committed file still
+holds what the script produces. That way the reviewable diff is the patch list, not the
+blob. If you change such a master, change its generator.
+
+The check compares the zip's **entry content**, not its bytes — deflate output varies
+between zlib builds, so two materially identical .docx files can differ byte for byte
+across machines. For the same reason the generator leaves the committed file alone when
+the content already matches, so regenerating never produces an empty-looking diff.
+
+(This does not apply to a personal or third-party template you are vendoring — commit
+those directly and record provenance in `NOTICE`.)
+
+### 3. No dangerous APIs
 The security scan (`npm run scan:security`) blocks, in Lua:
 `os.execute`, `io.popen`, `os.remove`, `os.rename`, `loadstring`/`load` of external
 input, and external `require`; and in LaTeX: `\write18`, `--shell-escape`, and
 absolute-path `\input`. If your asset genuinely needs one, a maintainer must review it
 and add an explicit, commented allowlist entry — it will not pass silently.
 
-### 3. Unique ids
+### 4. Unique ids
 Filter/template/csl/recipe ids are globally unique. A new file must not shadow an
 existing one; to change an existing shared asset, see below.
 
-### 4. You add; you don't overwrite
+### 5. You add; you don't overwrite
 External contributions may **only add** files by default. Modifying or deleting an
 existing **core** asset is scope-gated: CI (`check:pr-scope`) flags it, and it needs a
 `core-change` label + maintainer approval. This protects existing recipes.

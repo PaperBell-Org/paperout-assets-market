@@ -58,6 +58,11 @@ function normalize(buf) {
   return Buffer.from(buf.toString('utf8').split(ROOT).join('${REPO_ROOT}'), 'utf8');
 }
 
+// Pandoc resolves images relative to the working directory, which here is the repo
+// root — so a figure living next to sample/input.md would silently degrade to alt
+// text (a warning, exit 0) and the golden would prove nothing about figure handling.
+// --resource-path points it at the sample's own directory.
+//
 // A reproducible text fingerprint of the recipe's real output, honoring its FORMAT:
 //   docx   → the produced document.xml (stable; timestamps live elsewhere in the zip)
 //   beamer → the beamer LaTeX source
@@ -69,12 +74,12 @@ function fingerprint(id) {
   if (to === 'docx') {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
     const docx = path.join(tmp, 'out.docx');
-    execFileSync('pandoc', [sample, '--data-dir', ROOT, '--defaults', defaults, '-o', docx], { stdio: 'pipe' });
+    execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', docx], { stdio: 'pipe' });
     const xml = execFileSync('unzip', ['-p', docx, 'word/document.xml'], { maxBuffer: 64 * 1024 * 1024 });
     return sha256(normalize(xml));
   }
   const writer = to === 'beamer' ? 'beamer' : 'latex';
-  const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--defaults', defaults, '-t', writer, '-o', '-'], {
+  const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-t', writer, '-o', '-'], {
     maxBuffer: 64 * 1024 * 1024,
   });
   return sha256(normalize(out));
@@ -87,7 +92,7 @@ function fullBuild(id) {
   const ext = to === 'docx' ? 'docx' : 'pdf';
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
   const outFile = path.join(tmp, `output.${ext}`);
-  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--defaults', defaults, '-o', outFile], { stdio: 'pipe' });
+  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', outFile], { stdio: 'pipe' });
   const size = fs.existsSync(outFile) ? fs.statSync(outFile).size : 0;
   if (size <= 0) throw new Error('produced empty output');
   return size;
