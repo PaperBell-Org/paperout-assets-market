@@ -15,6 +15,7 @@
     "check:pr-scope": "node scripts/check-pr-scope.mjs",
     "check:versions": "node scripts/check-versions.mjs",
     "mk:manuscript-reference": "node scripts/mk-manuscript-reference.mjs",
+    "mk:response-letter-reference": "node scripts/mk-response-letter-reference.mjs",
     "build:recipe": "node scripts/build-recipe.mjs",
     "test": "vitest run"
   },

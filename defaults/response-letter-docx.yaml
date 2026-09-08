@@ -13,10 +13,32 @@ data-dir: ${.}/..
 ## 引文库（与其它 PaperBell preset 一致，供回复信里的 [@cite] 使用）
 # bibliography: ${USERDATA}/../../mybib.bib  # (commented by sync: plugin injects --bibliography)
 
+## Word 样式母版：三种角色（审稿意见 / 作者回复 / 修改后原文）靠字形、标签和方框区分，
+## 版式全部由它决定。由 scripts/mk-response-letter-reference.mjs 生成，取值来自 PDF 链的
+## templates/responseletter.sty。
+reference-doc: ${USERDATA}/templates/response-letter-reference.docx
+
+## 过滤器顺序与 PDF 链（response-letter.yaml）一致：
+## 1. manuscript_include —— 必须最先跑：把 ```manuscript 里的 @id 换成手稿里的当前原文，
+##    并把行号/页码作为 data-page/data-sline/data-eline 挂在 Div 上。不加它的话，
+##    @id 会原样印进 Word。
+## 2. manuscript_cite —— 手贴的 ```manuscript 围栏展开成 Div，块内 [@key] 进同一份文献表
+## 3. responseletter-docx —— 排版：callout → 命名样式，并从 callout 标题推出审稿人分节标题
+## 4. citeproc —— 最后跑：正文与手稿引文共用一份参考文献
+##
+## 为什么 citeproc 必须在 responseletter-docx 之后：设了 reference-section-title 之后，
+## citeproc 会插入一个 "References" Header，而本 filter 用"文中有没有 Header"来判断作者
+## 是不是自己写了分节标题 —— 让它先跑，审稿人标题（Reviewer #1 …）就全被抑制了。
+## （xlsx_table.lua 不在这里：它只会生成 LaTeX RawBlock，加进来表格会在 Word 里整块消失，
+##   见 issue #22。）
 filters:
-  - ${USERDATA}/filters/responseletter-docx.lua   #! callout → docx 原生块 + 剔除中文
+  - ${USERDATA}/filters/manuscript_include.lua   #! 必须最先跑
+  - ${USERDATA}/filters/manuscript_cite.lua
+  - ${USERDATA}/filters/responseletter-docx.lua  #! callout → 命名样式 + 剔除中文
   - citeproc
 
 metadata:
   type: author-response
   link-citations: false
+  ## 参考文献段落的标题，与 PDF 链一致；不写的话 Word 里是一段没有标题的文献列表
+  reference-section-title: References

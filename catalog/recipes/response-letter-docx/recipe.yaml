@@ -1,11 +1,13 @@
 id: response-letter-docx
-version: 1.0.0
+version: 1.1.0
 title:
   en: Response to reviewers (Word)
   zh: 审稿回复信 (Word)
 description:
-  en: "Point-by-point response to reviewers as a Word document: Obsidian callouts
-    become native paragraphs/quote blocks, Chinese draft annotations stripped
-    for submission."
-  zh: 逐条审稿回复导出 Word 文档：callout 转成原生段落/引用块，导出前剔除中文草稿批注。
+  en: "Point-by-point response to reviewers as a Word document, in the PaperBell house
+    style: a letterhead, italic reviewer comments with an RC: label, upright responses
+    with an AR: label, and framed manuscript quotes carrying a page/line locator and
+    pulled live from the manuscript. Chinese draft annotations stripped for submission."
+  zh: "逐条审稿回复导出 Word 文档，沿用 PaperBell 的观感：信头 + 斜体审稿意见（RC: 标签）+ 正体作者回复（AR:
+    标签）+ 带页码行号的加框手稿引文（直接从手稿原文拉取）；导出前剔除中文草稿批注。"
 tier: core
