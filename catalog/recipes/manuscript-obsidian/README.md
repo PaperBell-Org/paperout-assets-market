@@ -1,6 +1,6 @@
-# Manuscript (Word)
+# Manuscript (DOCX)
 
-**Produces:** DOCX · English-journal submission layout — Times New Roman 12 pt, double-spaced, left-aligned, no first-line indent, 1-inch margins, line numbers on
+**Produces:** DOCX · English-journal submission layout — Times New Roman 12 pt, double-spaced, justified body, centred title, no first-line indent, 1-inch margins, line numbers running continuously across pages
 
 ![preview](preview.png)
 
@@ -9,6 +9,48 @@
 ## When to use
 
 Turning an Obsidian/Longform draft into a Word file you can submit, or send to co-authors to mark up. Use `paperbell` instead when you want the typeset PDF, and `demo-obsidian` when you want the Chinese-thesis Word layout.
+
+## What formatting you get
+
+Everything below lives in `templates/manuscript-reference.docx` — the filters only tag each block with a style name, so this table *is* the layout. To retarget a journal, edit these styles in Word rather than touching any Lua.
+
+**Page and body**
+
+| | |
+| --- | --- |
+| Paper | US Letter (8.5 × 11 in), 1-inch margins on all four sides |
+| Body font | Times New Roman 12 pt, black |
+| Line spacing | Double — body, abstract, headings and references alike |
+| Body alignment | **Justified**; no first-line indent, no extra space between paragraphs |
+| Line numbers | On by default, every line, **continuous across pages** (not restarting each page), so "line 137" means one place in the whole file. `lineno: false` turns them off |
+| Bullets / numbered lists | Single-spaced and tight (`Compact`), so a list does not cost a page |
+
+**Title block**
+
+| Element | Style | Formatting |
+| --- | --- | --- |
+| Title | `Title` | **Centred**, bold, 14 pt, single-spaced |
+| Authors | `Author` | Left, 12 pt, single-spaced; affiliation numbers as superscripts, `*` marks corresponding authors |
+| Affiliations | `Affiliation` | Left, 10.5 pt, single-spaced, one per line, leading superscript index |
+| Correspondence | `Corresponding` | Left, 10.5 pt; one shared line for all corresponding addresses |
+| "Abstract" heading | `Abstract Title` | Left, bold, 12 pt |
+| Abstract text | `Abstract` | Justified, 12 pt, double-spaced |
+| Keywords | `Keywords` | Left, 12 pt, single-spaced |
+
+**Sections, figures, tables, references**
+
+| Element | Style | Formatting |
+| --- | --- | --- |
+| Section headings | `heading 1` / `2` / `3` | Left, black, bold at 14 / 13 pt and bold-italic at 12 pt — distinguished by weight, not colour or size jumps |
+| Figure | `Figure` / `Captioned Figure` | Centred |
+| Figure caption | `Image Caption` | Left, **10.5 pt** (half a point below body), above-space 6 pt, below 12 pt, `Figure 1: …` |
+| Table caption | `Table Caption` | Left, **10.5 pt**, bold, kept with its table, `Table 1: …` |
+| Tables | `Table` | Three-line (booktabs-style): rule above, rule under the header row, rule below; columns normalised to full text width |
+| References | `Bibliography` | Left (not justified — long DOIs in a justified line open ugly gaps), double-spaced, 0.5-inch hanging indent, under a `References` heading |
+
+Cross-references read `Figure 1` / `Figures 1, 2` / `Table 1`, matching what a journal expects; equation references stay at pandoc-crossref's `eq. 1`.
+
+Two things the master cannot decide on its own: whether figures and tables sit inline or at the end (`figures-at-end` / `tables-at-end`, see Options), and the paper size — changing that means editing the master's `sectPr` **and** `docxPage` in `defaults/manuscript-obsidian.yaml` together, see Customization.
 
 ## Requirements
 
@@ -53,7 +95,7 @@ Looser shapes work too, so a note written for plain pandoc still gets a title bl
 
 ## Customization
 
-All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`). To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
+All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`); the table above lists what each of those styles is set to. To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
 
 The committed master is generated, not hand-edited: `node scripts/mk-manuscript-reference.mjs` rebuilds it from pandoc's default reference doc plus the patches in that script, and `--check` (run in CI) asserts the committed file still holds what the script produces. If you change the shipped master, change the script.
 
