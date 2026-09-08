@@ -38,7 +38,12 @@ metadata:
   link-citations: false
   link-bibliography: false
 
-  # 与 PDF 链共用同一份 crossref 配置（图号前缀、公式编号模板）
+  # 参考文献段落的标题，与 PDF 链（paperbell.yaml）一致
+  reference-section-title: References
+
+  # NOTE: pandoc 只在 template / reference-doc / filters / csl 这类"路径键"上展开
+  # ${USERDATA}，metadata 里的值是字面量，pandoc-crossref 打不开就静默用内置默认。
+  # 所以这一行目前不生效（PDF 链同样如此，见 issue），真正起作用的是下面内联的前缀。
   crossrefYaml: ${USERDATA}/defaults/crossref.yaml
 
   # 可在单篇文档 YAML 中打开：
@@ -52,11 +57,29 @@ metadata:
   numberSections: false
   chapDelim: "-"
 
-  # 图表前缀：与 PDF 链保持一致的期刊写法
+  # 图表前缀：期刊写法。写成列表才有复数形式 —— 标量会让 [@fig:a;@fig:b] 渲染成
+  # "Figure 1, 2" 而不是 "Figures 1, 2"。
   figureTitle: "Figure"
-  figPrefix: "Figure"
+  figPrefix: ["Figure", "Figures"]
   tableTitle: "Table"
-  tblPrefix: "Table"
+  tblPrefix: ["Table", "Tables"]
+  # 公式引用保持 pandoc-crossref 的默认（"eq. 1"），与 PDF 链现状一致：
+  # eqnPrefixTemplate 只有从 crossref 自己的 YAML 文件读进去才会做变量替换，
+  # 走 pandoc metadata 会原样印出 "($$i$$)"。
+
+  # 行号分节符的页面设置。lineno-docx.lua 注入的 sectPr 是文档第一个 sectPr，
+  # 因此它定义正文那一节；母版的 sectPr 只剩末尾空节可管，而节属性不向后继承。
+  # 这几个值必须与 scripts/mk-manuscript-reference.mjs 的 SECT_PR 保持一致
+  # （Letter 12240×15840，1 英寸 = 1440 twips）。
+  docxPage:
+    width: 12240
+    height: 15840
+    top: 1440
+    right: 1440
+    bottom: 1440
+    left: 1440
+    header: 720
+    footer: 720
 
 # ============================================================
 # manuscript-obsidian.yaml —— 英文期刊投稿稿（Word）

@@ -47,6 +47,19 @@ metadata:
   tableTitle: "Tab"
   tblPrefix: "Tab"
 
+  # 开了 lineno: true 时，lineno-docx.lua 注入的 sectPr 会成为文档第一个 sectPr，
+  # 定义正文那一节，母版的 sectPr 只剩末尾空节可管（节属性不向后继承）。所以要在
+  # 这里复述母版的页面设置；取值 = templates/demo-reference.docx 的 sectPr。
+  docxPage:
+    width: 12240
+    height: 15840
+    top: 1701
+    right: 1701
+    bottom: 1701
+    left: 1701
+    header: 1417
+    footer: 1134
+
 
 # ============================================================ 
 # demo-obsidian.yaml —— Obsidian 静态成稿 DOCX 导出配置 

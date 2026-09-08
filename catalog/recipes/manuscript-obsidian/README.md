@@ -41,7 +41,7 @@ abstract: |                    # single-line string or block scalar, both suppor
 keywords: [one, two, three]
 ```
 
-Anything absent is simply omitted. `bibliography` and `csl` are injected by the plugin at run time — do not set them in the note or in the defaults file.
+Looser shapes work too, so a note written for plain pandoc still gets a title block: `author: Your Name` (or `author: [A, B]`) is used when there is no `authors:`; `authors: [A, B]` and `affiliations: [Dept A, Dept B]` may be plain strings; `keywords: one two` may be a scalar. Anything absent is simply omitted. `date:` is not rendered — a submission title block does not carry one. `bibliography` and `csl` are injected by the plugin at run time — do not set them in the note or in the defaults file.
 
 ## Options
 
@@ -56,6 +56,8 @@ Anything absent is simply omitted. `bibliography` and `csl` are injected by the 
 All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`). To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
 
 The committed master is generated, not hand-edited: `node scripts/mk-manuscript-reference.mjs` rebuilds it from pandoc's default reference doc plus the patches in that script, and `--check` (run in CI) asserts the committed file still holds what the script produces. If you change the shipped master, change the script.
+
+One coupling to know about if you change the **page setup**: line numbers are implemented as an injected OOXML section, and that section is the one that governs the body, so it has to carry the page size and margins itself. They live in `defaults/manuscript-obsidian.yaml` under `docxPage:` and must match the master's `sectPr` — change one, change the other, or a line-numbered export silently falls back to Word's local default paper size.
 
 ## Attribution
 

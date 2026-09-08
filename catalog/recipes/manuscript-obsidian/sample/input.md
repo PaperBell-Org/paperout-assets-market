@@ -34,8 +34,8 @@ references:
 ## Introduction
 
 Prior work established the baseline [@knuth1984]. See @fig:demo, @tbl:demo and
-@eq:demo for the cross-reference paths. ==Highlighted text== exercises the `mark`
-extension. ^para-one
+@eq:demo for the cross-reference paths, and [@fig:demo; @fig:extra] for the plural
+prefix. ==Highlighted text== exercises the `mark` extension. ^para-one
 
 Addresses must survive the CJK typesetting filter untouched: write to
 ada@example.org, or resolve doi:10.5555/example.2024 directly.
@@ -49,6 +49,8 @@ A hidden div that must not appear in the Word file either.
 ## Results
 
 ![A demo figure caption.](fig.png){#fig:demo}
+
+![A second figure, so a plural cross-reference has something to point at.](fig.png){#fig:extra}
 
 : A demo table caption. {#tbl:demo}
 

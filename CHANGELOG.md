@@ -31,7 +31,12 @@ different. This release finishes it.
   properly (`affiliation: [1, 2]` rendered as `12`), joins several corresponding
   authors onto one `* Correspondence:` line instead of repeating a starred line each,
   and no longer prints a `Correspondence:` line for a `corresponding:` value that is
-  not an address.
+  not an address. It also stopped dropping content for the looser frontmatter shapes
+  people actually write: `authors: [Ada, Alan]` as plain strings used to render an
+  author line of just `", "`, `affiliations: [Dept A, Dept B]` produced empty
+  paragraphs, a scalar `keywords: water governance` came out as
+  `Keywords: water;  ; governance`, and a note carrying only pandoc's standard
+  `author:` lost its byline entirely (the key was cleared but never rendered).
 
 - **`filters/cjk_format.lua` → 1.0.1.** Rule (e) ("space after Latin punctuation") had
   no CJK-context guard, so in all-Latin text it rewrote `song@gea.mpg.de` →
@@ -46,8 +51,32 @@ different. This release finishes it.
   line numbers are on by default and still switchable with `lineno: false`, matching the
   PDF route and the description the recipe already advertised; extends `from:` with
   `mark`, `tex_math_single_backslash` and `autolink_bare_uris` to match the PDF route;
-  and replaces the inlined `Fig`/`Tab` prefixes with `crossrefYaml`, so PDF and Word
-  agree on "Figure 1" and equation numbering works. `figures-at-end` stays opt-in.
+  adds `reference-section-title: References` so the Word bibliography gets a heading
+  like the PDF route's; and spells the cross-reference prefixes as lists
+  (`[Figure, Figures]` / `[Table, Tables]`) so `[@fig:a; @fig:b]` renders "Figures 1, 2"
+  instead of "Figure 1, 2". `figures-at-end` stays opt-in.
+
+  Note on `crossrefYaml`: pandoc expands `${USERDATA}` only in path-typed keys
+  (`template`, `reference-doc`, `filters`, `csl`), not in `metadata:` values, so
+  `crossrefYaml: ${USERDATA}/defaults/crossref.yaml` never resolves and pandoc-crossref
+  silently falls back to its built-ins — on this route and on the PDF routes alike. The
+  prefixes above are what actually takes effect; equation references stay at
+  pandoc-crossref's default `eq. 1`, matching the PDF route's current behaviour
+  (`eqnPrefixTemplate` only does variable substitution when read from crossref's own
+  YAML file, so it cannot be set through metadata). Tracked separately.
+
+- **`filters/lineno-docx.lua` → 1.0.1.** The section it injects for line numbering is
+  the document's *first* `sectPr`, so it governs the body and the reference doc's own
+  `sectPr` only governs the empty trailing section — and OOXML section properties do
+  not inherit backwards. It carried only `lnNumType`, so a line-numbered export threw
+  away the master's paper size and margins and let Word re-page the manuscript by its
+  local default (A4 plus Chinese-locale margins on a Chinese Word). That branch was
+  nearly unreachable before, but this release turns line numbers on by default, which
+  would have made it the normal case and quietly broken the "1-inch margins" this
+  recipe promises. The injected section now carries `pgSz`/`pgMar`, taken from the new
+  `docxPage` metadata in each docx route's defaults (values mirror that route's
+  master), and line numbering starts at 1 rather than 0. `demo-obsidian` gets the same
+  metadata, so `lineno: true` there keeps `demo-reference.docx`'s 3 cm margins.
 
 - **`scripts/build-recipe.mjs`** — pass `--resource-path <sampleDir>`. Pandoc resolved
   sample images against the repo root, so a figure beside `sample/input.md` degraded to
@@ -56,8 +85,9 @@ different. This release finishes it.
 
 - **New `manuscript-obsidian` sample and golden.** Covers authors, multi-affiliation
   superscripts, corresponding email, block-scalar abstract, keywords, a citation (inline
-  CSL-JSON, no bib file needed), a numbered figure with a real PNG, a captioned table, an
-  equation, `==highlight==`, and the email/DOI and Obsidian-syntax cases above. The
+  CSL-JSON, no bib file needed), two numbered figures with a real PNG and a plural
+  cross-reference, a captioned table, an equation, `==highlight==`, and the email/DOI and
+  Obsidian-syntax cases above. The
   golden moved deliberately; `demo-obsidian`'s did not.
 
 - `package.json` gains `check:versions`; `validate.yml` gains the master `--check` step.

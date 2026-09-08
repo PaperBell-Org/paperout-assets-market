@@ -8,6 +8,12 @@
     Title / Author / Affiliation / Corresponding / Abstract Title / Abstract / Keywords
 
   这样版式全部由母版决定 —— 换一本刊物只要换母版，不用动这个 filter。
+
+  笔记的写法不止一种，这个 filter 对每种都要么排出内容、要么整块省略，不能吞字：
+    authors: [{name:, affiliation:, corresponding:}, …]   完整形式
+    authors: [张三, 李四] / author: 张三                    只有名字
+    affiliations: [{index:, name:}, …] / [某院, 某所]
+    keywords: [a, b] / keywords: a b
 --]]
 
 -- 样式名：与 templates/manuscript-reference.docx 的 <w:name> 一一对应。
@@ -30,6 +36,11 @@ local function meta_type(val)
   return ok and t or nil
 end
 
+-- YAML 的 map（如 `- name: …`）到了 Lua 是普通 table；纯字符串条目则是 Inlines。
+local function is_map(val)
+  return meta_type(val) == "table"
+end
+
 --- metadata 值 → Inlines（标题、姓名、关键词这类一定是行内的位置）
 local function as_inlines(val)
   if val == nil then return pandoc.List({}) end
@@ -46,6 +57,13 @@ local function as_blocks(val)
   if t == "Blocks" then return pandoc.List(val) end
   if t == "Inlines" then return pandoc.List({ pandoc.Para(pandoc.List(val)) }) end
   return pandoc.List({ pandoc.Para({ pandoc.Str(pandoc.utils.stringify(val)) }) })
+end
+
+--- 单值也好、列表也好，一律当成条目列表来遍历（`authors: 张三` 也是一个作者）
+local function as_items(val)
+  if val == nil then return {} end
+  if meta_type(val) == "List" then return val end
+  return { val }
 end
 
 local function styled(name, blocks)
@@ -75,6 +93,49 @@ local function corresponding_address(val)
   return s:find("@", 1, true) and s or nil
 end
 
+--- 一位作者 → Inlines。map 形式排「姓名 + 机构上标 + 通讯星号」，纯名字就只排名字。
+local function author_inlines(a)
+  if not is_map(a) then return as_inlines(a) end
+
+  local line = pandoc.List()
+  if a.name then line:extend(as_inlines(a.name)) end
+  if #line == 0 then return line end          -- 没名字就整条跳过，别只留分隔符
+
+  local aff = affiliation_label(a.affiliation)
+  if aff then line:insert(pandoc.Superscript(pandoc.Str(aff))) end
+  if a.corresponding then line:insert(pandoc.Superscript(pandoc.Str("*"))) end
+  return line
+end
+
+--- 一个机构 → Inlines。map 形式排「编号上标 + 名称」，纯字符串就直接排。
+local function affiliation_inlines(aff)
+  if not is_map(aff) then return as_inlines(aff) end
+
+  local line = pandoc.List()
+  if aff.index then
+    line:insert(pandoc.Superscript(pandoc.Str(pandoc.utils.stringify(aff.index))))
+    line:insert(pandoc.Space())
+  end
+  if aff.name then line:extend(as_inlines(aff.name)) end
+  if #line == 1 then return pandoc.List({}) end  -- 只有编号、没有名称 = 空条目
+  return line
+end
+
+--- 把若干段 Inlines 用 "、" 连起来，空的那些不留分隔符
+local function join(parts, sep)
+  local line = pandoc.List()
+  for _, part in ipairs(parts) do
+    if #part > 0 then
+      if #line > 0 then
+        line:insert(pandoc.Str(sep))
+        line:insert(pandoc.Space())
+      end
+      line:extend(part)
+    end
+  end
+  return line
+end
+
 function Pandoc(doc)
   local meta = doc.meta
   local head = pandoc.List()
@@ -83,56 +144,49 @@ function Pandoc(doc)
     head:insert(styled_para(STYLE.title, as_inlines(meta.title)))
   end
 
-  if meta.authors then
-    local line = pandoc.List()
-    for i, a in ipairs(meta.authors) do
-      if a.name then line:extend(as_inlines(a.name)) end
-      local aff = affiliation_label(a.affiliation)
-      if aff then line:insert(pandoc.Superscript(pandoc.Str(aff))) end
-      if a.corresponding then line:insert(pandoc.Superscript(pandoc.Str("*"))) end
-      if i < #meta.authors then
-        line:insert(pandoc.Str(","))
-        line:insert(pandoc.Space())
-      end
-    end
-    head:insert(styled_para(STYLE.author, line))
+  -- `authors:` 是本 recipe 的写法；只写了 pandoc 标准的 `author:` 也照排，
+  -- 否则作者行会凭空消失（旧版就是这样）。
+  local authors = as_items(meta.authors ~= nil and meta.authors or meta.author)
+
+  local author_parts = pandoc.List()
+  for _, a in ipairs(authors) do
+    author_parts:insert(author_inlines(a))
+  end
+  local author_line = join(author_parts, ",")
+  if #author_line > 0 then
+    head:insert(styled_para(STYLE.author, author_line))
   end
 
-  if meta.affiliations then
-    for _, aff in ipairs(meta.affiliations) do
-      local line = pandoc.List()
-      if aff.index then
-        line:insert(pandoc.Superscript(pandoc.Str(pandoc.utils.stringify(aff.index))))
-        line:insert(pandoc.Space())
-      end
-      if aff.name then line:extend(as_inlines(aff.name)) end
+  for _, aff in ipairs(as_items(meta.affiliations)) do
+    local line = affiliation_inlines(aff)
+    if #line > 0 then
       head:insert(styled_para(STYLE.affiliation, line))
     end
   end
 
   -- 多个通讯作者共用同一个星号，地址并成一行；每人一行、行行带星号是错的。
-  if meta.authors then
-    local addresses = {}
-    for _, a in ipairs(meta.authors) do
+  local addresses = {}
+  for _, a in ipairs(authors) do
+    if is_map(a) then
       local address = corresponding_address(a.corresponding)
       if address then addresses[#addresses + 1] = address end
     end
-    if #addresses > 0 then
-      local line = pandoc.List({
-        pandoc.Superscript(pandoc.Str("*")),
-        pandoc.Space(),
-        pandoc.Str("Correspondence:"),
-        pandoc.Space(),
-      })
-      for i, address in ipairs(addresses) do
-        if i > 1 then
-          line:insert(pandoc.Str(";"))
-          line:insert(pandoc.Space())
-        end
-        line:insert(pandoc.Str(address))
+  end
+  if #addresses > 0 then
+    local line = pandoc.List({
+      pandoc.Superscript(pandoc.Str("*")),
+      pandoc.Space(),
+      pandoc.Str("Correspondence:"),
+      pandoc.Space(),
+    })
+    for i, address in ipairs(addresses) do
+      if i > 1 then
+        line:insert(pandoc.Str(";"))
+        line:insert(pandoc.Space())
       end
-      head:insert(styled_para(STYLE.corresponding, line))
+      line:insert(pandoc.Str(address))
     end
+    head:insert(styled_para(STYLE.corresponding, line))
   end
 
   if meta.abstract then
@@ -140,20 +194,23 @@ function Pandoc(doc)
     head:insert(styled(STYLE.abstract, as_blocks(meta.abstract)))
   end
 
+  -- `keywords: [a, b]` 逐项排；`keywords: 水资源 治理` 是一个 Inlines，整体排一行 ——
+  -- 按项遍历会把它拆成 Str/Space 并塞进分号（"水资源;  ; 治理"）。
   if meta.keywords then
-    local line = pandoc.List({ pandoc.Strong({ pandoc.Str("Keywords:") }), pandoc.Space() })
-    for i, kw in ipairs(meta.keywords) do
-      line:extend(as_inlines(kw))
-      if i < #meta.keywords then
-        line:insert(pandoc.Str(";"))
-        line:insert(pandoc.Space())
-      end
+    local items = pandoc.List()
+    for _, kw in ipairs(as_items(meta.keywords)) do
+      items:insert(as_inlines(kw))
     end
-    head:insert(styled_para(STYLE.keywords, line))
+    local kw_line = join(items, ";")
+    if #kw_line > 0 then
+      local line = pandoc.List({ pandoc.Strong({ pandoc.Str("Keywords:") }), pandoc.Space() })
+      line:extend(kw_line)
+      head:insert(styled_para(STYLE.keywords, line))
+    end
   end
 
   -- 抬头已经手工排好，清掉这些键，否则 docx writer 会在最上面再自动生成一份
-  -- 标题/作者/日期/摘要。
+  -- 标题/作者/日期/摘要。（副作用：docProps 的 dc:title / dc:creator 会是空的。）
   meta.title = nil
   meta.author = nil
   meta.authors = nil

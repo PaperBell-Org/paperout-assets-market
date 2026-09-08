@@ -141,15 +141,17 @@ filters/latex-div.lua:
     zh: 沿用自 R Markdown 的公有领域 filter，把带 latex 属性的 Div 转成 LaTeX 环境；因依赖未设置的
       RMARKDOWN_LUA_SHARED 环境变量，本项目中当前不生效。
 filters/lineno-docx.lua:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Word line numbers
     zh: Word 行号
   description:
     en: "When lineno: true, injects an OOXML section break so the Word export shows
-      per-page line numbers (docx only; PDF uses LaTeX lineno)."
-    zh: "当 lineno: true 时注入 OOXML 分节符，让 Word 导出每页显示行号（仅 docx；PDF 靠 LaTeX 的 lineno
-      包）。"
+      per-page line numbers; the injected section carries the reference doc's page
+      size and margins (from the docxPage metadata) so it does not re-page the
+      document (docx only; PDF uses LaTeX lineno)."
+    zh: "当 lineno: true 时注入 OOXML 分节符，让 Word 导出每页显示行号；注入的这一节会带上母版的纸张与页边距（取自
+      docxPage 元数据），不会把整篇正文的版式冲掉（仅 docx；PDF 靠 LaTeX 的 lineno 包）。"
 filters/lineno_default.lua:
   version: 1.0.0
   title:
