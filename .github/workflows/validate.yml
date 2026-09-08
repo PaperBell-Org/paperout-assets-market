@@ -1,7 +1,12 @@
 name: Validate
 
 on:
+  # `labeled`/`unlabeled` matter because the PR scope gate reads PR_LABELS: applying
+  # `core-change` to an already-open PR must re-run the gate. A plain re-run replays
+  # the original event payload (labels still empty), so without these types the only
+  # way to get a green check was an empty retrigger commit.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
 permissions:
   contents: read
