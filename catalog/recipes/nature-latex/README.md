@@ -128,14 +128,27 @@ route, so writing them costs you nothing there.
 ## Options
 
 **The default is the typeset form** — single-spaced, no line numbers, figures and tables
-collected at the end. That is what the journal prints, so it is what you check before
+collected at the very end. That is what the journal prints, so it is what you check before
 uploading. Nothing to set; it is what you get.
+
+The float sections land **after** the reference list, in Springer Nature's required order:
+
+```
+… Methods · Data Availability · References · Acknowledgements …
+   → Tables → Figure Legends/Captions
+```
+
+Getting this wrong is not cosmetic. Figures are LaTeX floats, so collecting them merely at
+the end of the body puts them *before* `\bibliography{}` and they then drift into the
+reference list — in testing, Figure 2 landed between `[1]` and `[2]`, splitting the
+bibliography in half, with Figure 3 after it. The export moves both sections past the
+bibliography and pins the figures with `[H]` so they cannot drift back.
 
 | Frontmatter | Default | Effect |
 |---|---|---|
 | `referee:` | `false` | Double line spacing, via the class's `referee` option. |
 | `lineno:` | `false` | Line numbers, via the class's `lineno` option. |
-| `figures-at-end:` / `tables-at-end:` | `true` | Collect floats at the end under their own headings. `false` leaves them in place. |
+| `figures-at-end:` / `tables-at-end:` | `true` | Collect floats after the reference list, Tables then Figures. `false` leaves them in place in the text. |
 | `sn-refstyle:` | `sn-nature` | Reference style. One of `sn-nature`, `sn-basic`, `sn-mathphys-num`, `sn-mathphys-ay`, `sn-aps`, `sn-vancouver-num`, `sn-vancouver-ay`, `sn-apa`, `sn-chicago`. Selects both the documentclass option and the `.bst` packed into the zip. |
 | `sn-options:` | `[pdflatex, <sn-refstyle>]` | Takes over the documentclass option list entirely, e.g. `[pdflatex, sn-basic, twocolumn]`. If you set this, keep an `sn-*` style in the list or the class emits no `\bibliographystyle` and your references vanish. |
 | `nocite:` | — | Entries that belong in the reference list without being cited in the text. |

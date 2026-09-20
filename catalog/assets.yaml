@@ -520,7 +520,7 @@ defaults/crossref.yaml:
       Figure/Figures and equation numbering to the ($i$) template.
     zh: 共享的 pandoc-crossref 配置片段，把图前缀设为 Figure/Figures，公式编号用 ($i$) 模板。
 writers/latex-submission.lua:
-  version: 1.2.0
+  version: 1.3.0
   title:
     en: Submission zip writer
     zh: 投稿源文件打包 writer
@@ -535,7 +535,7 @@ writers/latex-submission.lua:
       references.bib、逐张独立且文件名已净化的图片、sn-jnl 文档类和所选样式对应的
       .bst。
 templates/nature-latex.latex:
-  version: 1.1.0
+  version: 1.2.0
   title:
     en: Springer Nature submission template
     zh: Springer Nature 投稿模板
