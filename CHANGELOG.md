@@ -4,6 +4,35 @@ Notable changes to the published assets and tooling. Versions are the release ta
 
 ## Unreleased
 
+**`nature-latex` handles bilingual Chinese author names, and compiles with XeLaTeX.**
+Found by exporting a real manuscript: `\sur{宋爽}` made pdfLaTeX fail with
+`Unicode character 宋 not set up for use with LaTeX`. Two separate bugs behind it.
+
+- **`writers/latex-submission.lua` → 1.1.0.** `split_name` cut on the last space, so
+  `Shuang Song 宋爽` became `\fnm{Shuang Song} \sur{宋爽}`. That *looks* right on the
+  page, which is why it was easy to miss, but Springer Nature reads `\fnm`/`\sur` as
+  given-name/surname metadata, so the split was semantically wrong. The CJK part now
+  rides with the surname — `\fnm{Shuang} \sur{Song 宋爽}` — a wholly-CJK name is not
+  split, and the test is on CJK code points rather than "non-ASCII", so `Jürgen Renn`
+  still splits normally.
+
+- **`templates/nature-latex.latex` → 1.1.0** gains a CJK font fallback chain, the 7th
+  documented change from Pandoc's default template. `defaults/nature-latex.yaml` now sets
+  `CJKmainfont: Songti SC`, but a submission zip is compiled on other people's machines —
+  co-authors', the journal's — where that font does not exist, and a missing font is a
+  hard XeLaTeX error. The template tries the author's choice, then `Noto Serif CJK SC`,
+  `Source Han Serif SC`, `Songti SC` and `SimSun`, falling back to the author's name last
+  so the error points at the real cause.
+
+  Setting `CJKmainfont` does **not** force XeLaTeX on anyone: the block sits inside
+  `\ifXeTeX`, and an English-only manuscript still compiles with `pdflatex` — verified.
+
+`catalog/recipes/nature-latex/sample/input.md` gained a bilingual author and a
+`Jürgen Müller`, so neither behaviour can regress silently. Documented in the recipe
+README and in `catalog/manuscript-frontmatter.md`. `full` → 1.0.7.
+
+## 1.0.10 — 2026-09-20
+
 New recipe **`nature-latex`** (Nature-LaTeX): a manuscript exports to a Springer Nature
 LaTeX *submission package* — a zip holding `main.tex` on the official `sn-jnl` class, a
 `references.bib` containing only the entries the manuscript actually cites, each figure as
