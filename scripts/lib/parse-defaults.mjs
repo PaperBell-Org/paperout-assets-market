@@ -7,6 +7,7 @@
 //   - filters: [ ${USERDATA}/filters/<x>.lua, ${.}/../filters/<x>.lua, citeproc, ... ]
 //   - metadata.crossrefYaml: ${USERDATA}/defaults/crossref.yaml
 //   - csl: (must be commented out; if active, it is a dependency)
+//   - to:              ${USERDATA}/filters/<x>.lua        (custom Lua writers)
 //
 // Two portable prefixes appear in the wild and both are valid (no machine paths):
 //   ${USERDATA}/foo   and   ${.}/../foo   → repo-relative `foo`.
@@ -60,6 +61,14 @@ export function parseDefaults(yamlText) {
   // template (latex/tex) and reference-doc (docx) both point at templates/
   refToRequire(doc.template, requires, rawRefs);
   refToRequire(doc['reference-doc'], requires, rawRefs);
+
+  // `to:` is normally a format name (docx, latex, beamer) — but Pandoc 3 also accepts
+  // a path to a custom Lua writer, and that writer is as load-bearing as the template:
+  // miss it here and the file is neither packed into the bundle nor installed by the
+  // plugin, so the recipe arrives broken. Only treat it as a path when it looks like
+  // one; a bare format name stays a format name (it is NOT a system dep).
+  const to = typeof doc.to === 'string' ? doc.to.trim() : '';
+  if (to && (to.includes('/') || to.includes('$'))) refToRequire(to, requires, rawRefs);
 
   // filters list: portable refs → files; bare tokens → system deps
   const filters = Array.isArray(doc.filters) ? doc.filters : [];

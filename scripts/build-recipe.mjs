@@ -65,12 +65,45 @@ function normalize(buf) {
 //
 // A reproducible text fingerprint of the recipe's real output, honoring its FORMAT:
 //   docx   → the produced document.xml (stable; timestamps live elsewhere in the zip)
+//   *.lua  → a custom Lua writer producing a zip: the sorted entry list plus a hash
+//            of each entry's content (see zipFingerprint)
 //   beamer → the beamer LaTeX source
 //   else   → the LaTeX source (PDF recipes render this via xelatex at full build)
+
+// A recipe whose `to:` is a path to a custom Lua writer (pandoc 3 accepts that) must
+// be fingerprinted by RUNNING it. Re-running the chain with `-t latex`, as the generic
+// branch below does, bypasses the writer completely — zip layout, figure packaging,
+// bibliography extraction and .bst selection would all go untested and the golden
+// would prove nothing.
+//
+// Hash entry CONTENT, never the zip bytes: deflate is not a fixed function, zlib's
+// exact bit stream varies between versions (the same reason scripts/lib/docx.mjs
+// compares entries rather than file hashes).
+const TEXT_ENTRY = /\.(tex|bib|cls|bst|txt|md|json|ya?ml)$/i;
+
+function zipFingerprint(id, sample, defaults) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
+  const zip = path.join(tmp, 'out.zip');
+  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', zip], { stdio: 'pipe' });
+
+  const names = execFileSync('unzip', ['-Z1', zip], { maxBuffer: 16 * 1024 * 1024 })
+    .toString('utf8').split('\n').map((s) => s.trim()).filter(Boolean).sort();
+
+  const parts = [];
+  for (const name of names) {
+    const content = execFileSync('unzip', ['-p', zip, name], { maxBuffer: 64 * 1024 * 1024 });
+    // normalize() round-trips through utf8, which would mangle binary payloads —
+    // only text entries can carry an absolute repo path worth normalizing anyway.
+    parts.push(`${name}\n${sha256(TEXT_ENTRY.test(name) ? normalize(content) : content)}\n`);
+  }
+  return sha256(Buffer.from(parts.join(''), 'utf8'));
+}
+
 function fingerprint(id) {
   const sample = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md');
   const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
   const to = recipeTo(defaults);
+  if (to.endsWith('.lua')) return zipFingerprint(id, sample, defaults);
   if (to === 'docx') {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
     const docx = path.join(tmp, 'out.docx');
@@ -89,7 +122,7 @@ function fullBuild(id) {
   const sample = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md');
   const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
   const to = recipeTo(defaults);
-  const ext = to === 'docx' ? 'docx' : 'pdf';
+  const ext = to === 'docx' ? 'docx' : to.endsWith('.lua') ? 'zip' : 'pdf';
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
   const outFile = path.join(tmp, `output.${ext}`);
   execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', outFile], { stdio: 'pipe' });

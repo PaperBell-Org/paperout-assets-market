@@ -31,6 +31,21 @@ describe('parseDefaults', () => {
     expect(p.systemDeps).toContain('citeproc');
   });
 
+  it('treats a custom Lua writer in `to:` as a required file (nature-latex)', () => {
+    const p = parseDefaults(read('nature-latex.yaml'));
+    // Miss this and the writer is neither bundled nor installed — the recipe
+    // arrives broken even though every other dependency resolved.
+    expect(p.requires).toContain('filters/latex-submission.lua');
+    expect(p.requires).toContain('templates/nature-latex.latex');
+    expect(p.systemDeps).not.toContain('nature-latex.yaml');
+  });
+
+  it('leaves a bare format name in `to:` alone (docx is not a dependency)', () => {
+    const p = parseDefaults(read('manuscript-obsidian.yaml'));
+    expect(p.requires).not.toContain('docx');
+    expect(p.systemDeps).not.toContain('docx');
+  });
+
   it('stripVar handles both portable prefixes', () => {
     expect(stripVar('${USERDATA}/filters/x.lua')).toBe('filters/x.lua');
     expect(stripVar('${.}/../filters/x.lua')).toBe('filters/x.lua');

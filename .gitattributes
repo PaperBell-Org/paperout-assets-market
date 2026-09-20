@@ -1,0 +1,7 @@
+# Vendored Springer Nature LaTeX template package (templates/nature/).
+#
+# The upstream files ship with CR-only line endings (sn-jnl.cls) and contain
+# non-UTF-8 bytes. Git must not normalize them: rewriting the line endings
+# corrupts the class file, and a corrupted .cls fails at \documentclass with an
+# error that points nowhere near the real cause.
+templates/nature/** -text

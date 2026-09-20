@@ -1,0 +1,27 @@
+id: nature-latex
+version: 1.0.0
+title:
+  en: Nature-LaTeX (submission sources)
+  zh: Nature-LaTeX（投稿源文件）
+description:
+  en: "Manuscript to a Springer Nature LaTeX submission package (.zip): a single
+    main.tex on the official sn-jnl document class, a references.bib holding only
+    the entries this manuscript actually cites, every figure as its own file, and
+    the class plus the reference style it needs. Double-spaced and line-numbered
+    for review by default; compiles with pdflatex + bibtex."
+  zh: 手稿导出 Springer Nature 的 LaTeX 投稿源文件包（.zip）：单文件 main.tex
+    （官方 sn-jnl 文档类）、只含本文引用条目的 references.bib、逐张独立的图片文件，
+    外加所配的文档类与参考文献样式。默认双倍行距加行号的送审形态，用
+    pdflatex + bibtex 编译。
+tier: core
+extraFiles:
+  - templates/nature/sn-jnl.cls
+  - templates/nature/bst/sn-nature.bst
+  - templates/nature/bst/sn-basic.bst
+  - templates/nature/bst/sn-mathphys-num.bst
+  - templates/nature/bst/sn-mathphys-ay.bst
+  - templates/nature/bst/sn-aps.bst
+  - templates/nature/bst/sn-vancouver-num.bst
+  - templates/nature/bst/sn-vancouver-ay.bst
+  - templates/nature/bst/sn-apacite.bst
+  - templates/nature/bst/sn-chicago.bst

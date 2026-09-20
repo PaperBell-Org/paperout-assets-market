@@ -21,6 +21,28 @@ templates/paperbell.latex
   As a derivative of Eisvogel, it remains subject to Eisvogel's BSD 3-Clause
   terms; the file header carries the derivation notice.
 
+templates/nature/sn-jnl.cls, templates/nature/bst/*.bst
+  Springer Nature LaTeX template package, version 3.1 (December 2024) — the
+  document class and the nine reference styles (sn-nature, sn-basic,
+  sn-mathphys-num, sn-mathphys-ay, sn-aps, sn-vancouver-num, sn-vancouver-ay,
+  sn-apacite, sn-chicago) used for submissions to Springer Nature journals,
+  including the Nature Portfolio titles.
+  Copyright (c) Springer Nature; sn-jnl.cls is generated with docstrip from the
+  LaTeX base system (Copyright (c) 1993-2009 The LaTeX3 Project).
+  License: LaTeX Project Public License 1.3c. Full license notice retained in the
+  class file header.
+  Upstream: https://www.springernature.com/gp/authors/campaigns/latex-author-support
+  Redistributed unmodified, byte for byte (see .gitattributes — Git must not
+  normalize their CR line endings). The recipe packs the class and the one .bst in
+  use into each exported submission zip, so the author ships them to the journal.
+
+templates/nature-latex.latex
+  Derived from Pandoc's own default LaTeX template (`pandoc
+  --print-default-template=latex`) with its six partials inlined, then adapted to
+  the sn-jnl document class.
+  Copyright (c) 2006-present, John MacFarlane and Pandoc contributors.
+  The file header carries the derivation notice and lists every change.
+
 templates/cover_letter.latex, templates/cover_letter_template.latex
   Built on the moderncv LaTeX class (LPPL). moderncv itself is not vendored here —
   it is provided by the user's TeX distribution.
