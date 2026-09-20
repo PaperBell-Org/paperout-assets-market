@@ -59,6 +59,19 @@ Your `defaults/*.yaml` **must**:
 4. Never commit **personal identity assets** (logos, signatures). Ship a placeholder
    plus a README explaining replacement — see `templates/cover_letter/`.
 
+A recipe that reaches a system binary *indirectly* — e.g. a Lua shim calling
+`pandoc.utils.run_json_filter` instead of naming `pandoc-crossref` as a bare filter token
+— has nothing to derive from, so it declares the dependency in its `recipe.yaml`:
+
+```yaml
+systemDeps:
+  - pandoc-crossref
+```
+
+That list is **merged** with the derived one, and every name in the result is checked
+against the set the toolchain knows, so a typo fails the build instead of shipping a
+prompt for a binary that does not exist. `requires` is still never hand-written.
+
 `requires` is **auto-derived** from your yaml (`template:`, `filters:`, `crossrefYaml`,
 any uncommented `csl:`). Never hand-write it. Bare filter tokens `citeproc` and
 `pandoc-crossref` are recorded as `systemDeps` (prompt-only, not downloaded).

@@ -1,7 +1,7 @@
 $--============================================================================
 $-- nature-latex.latex —— Springer Nature 投稿源文件的 pandoc LaTeX 模板
 $--
-$-- 只给 filters/latex-submission.lua 这个 custom writer 用，配 defaults/nature-latex.yaml。
+$-- 只给 writers/latex-submission.lua 这个 custom writer 用，配 defaults/nature-latex.yaml。
 $--
 $-- 来历：`pandoc --print-default-template=latex`，**并把 6 个 partial 全部内联展平**
 $-- （passoptions / fonts / font-settings / common / after-header-includes / hypersetup）。
@@ -38,7 +38,7 @@ $if(CJKmainfont)$
 \PassOptionsToPackage{space}{xeCJK}
 $endif$
 
-$-- Springer Nature 文档类。选项由 filters/latex-submission.lua 算好后塞进
+$-- Springer Nature 文档类。选项由 writers/latex-submission.lua 算好后塞进
 $-- sn-options（默认 referee,lineno,pdflatex,sn-nature）——
 $-- referee = 双倍行距，lineno = 行号，两者都是 class 选项，不是宏包。
 \documentclass[$sn-options$]{sn-jnl}
@@ -510,7 +510,7 @@ $if(title)$
 \title[$if(shorttitle)$$shorttitle$$else$$title$$endif$]{$title$$if(thanks)$\thanks{$thanks$}$endif$}
 $endif$
 $-- \author*[..]{\fnm{}\sur{}}\email{} 和 \affil*[..]{\orgdiv{}\orgname{}\orgaddress{}}
-$-- 由 filters/latex-submission.lua 拼好 —— 扁平写法要按最后一个空格拆姓名，
+$-- 由 writers/latex-submission.lua 拼好 —— 扁平写法要按最后一个空格拆姓名，
 $-- 模板语言做不到。
 $if(sn-titleblock)$
 

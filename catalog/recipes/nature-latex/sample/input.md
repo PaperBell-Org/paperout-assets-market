@@ -8,8 +8,11 @@ authors:
     email: song@example.edu
     corresponding: true
     affiliation: [1]
-  # 扁平写法：manuscript-obsidian 既有的键，按最后一个空格拆姓名
+  # 两种拼法都写：schema 规定 `name:` 赢。这一条锁住的是那条规则本身 ——
+  # 两条链一旦在优先级上分家，同一份笔记就会在 Word 和投稿包里得到不同的作者名。
   - name: Bob A. Jones
+    fnm: MUSTNOT
+    sur: APPEAR
     affiliation: [2]
     equalcont: These authors contributed equally to this work.
 affiliations:

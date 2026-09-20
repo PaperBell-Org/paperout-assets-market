@@ -197,15 +197,18 @@ end
 
 -- ------------------------------------------------------ 2. references.bib
 
+-- 记一个 key，保持首次出现的顺序、不重复。
+local function push_id(seen, order, id)
+  if not seen[id] then
+    seen[id] = true
+    order[#order + 1] = id
+  end
+end
+
 local function collect_cite_ids(el, seen, order)
   el:walk {
     Cite = function(c)
-      for _, citation in ipairs(c.citations) do
-        if not seen[citation.id] then
-          seen[citation.id] = true
-          order[#order + 1] = citation.id
-        end
-      end
+      for _, citation in ipairs(c.citations) do push_id(seen, order, citation.id) end
     end,
   }
 end
@@ -264,12 +267,7 @@ local function build_bibliography(doc)
   -- 消失、正文留一个 (?) —— 必须在导出当时就喊出来。
   local seen, order = {}, {}
   collect_cite_ids(pandoc.Pandoc(doc.blocks), seen, order)
-  for _, id in ipairs(norder) do
-    if not seen[id] then
-      seen[id] = true
-      order[#order + 1] = id
-    end
-  end
+  for _, id in ipairs(norder) do push_id(seen, order, id) end
 
   local resolved = {}
   for _, ref in ipairs(refs) do resolved[ref.id] = true end
@@ -410,10 +408,15 @@ local function author_macro(a)
   local affils = {}
 
   if is_map(a) then
-    fnm, sur = tex_of(a.fnm), tex_of(a.sur)
-    spfx, sfx = tex_of(a.spfx), tex_of(a.sfx)
+    -- `name:` 优先，结构化字段是回落 —— 与 filters/manuscript-docx.lua 和
+    -- catalog/manuscript-frontmatter.md 保持同一条规则。两边不一致的话，
+    -- 同时写了两种拼法的笔记会在 Word 和投稿包里得到不同的作者名。
+    -- 走 name 这条路时整只姓名都来自 name，spfx/sfx 一并忽略，免得拼出
+    -- 半个来自这边半个来自那边的名字。
+    fnm, sur = split_name(tex_of(a.name))
     if not (fnm or sur) then
-      fnm, sur = split_name(tex_of(a.name))
+      fnm, sur = tex_of(a.fnm), tex_of(a.sur)
+      spfx, sfx = tex_of(a.spfx), tex_of(a.sfx)
     end
     equal = tex_of(a.equalcont)
     corresponding = a.corresponding and a.corresponding ~= false
@@ -449,7 +452,7 @@ local function author_macro(a)
 
   -- 第二个返回值 = 要跟着带 * 的机构编号。让「这位是不是通讯作者」只在这里判一次，
   -- 调用方不必再照着重算一遍同样的规则。
-  return line, corresponding and affils or nil
+  return line, corresponding and affils or {}
 end
 
 local function affil_macro(aff, index, starred)
@@ -460,7 +463,8 @@ local function affil_macro(aff, index, starred)
     if div then parts[#parts + 1] = '\\orgdiv{' .. div .. '}' end
 
     -- `name:` 是 manuscript-obsidian 既有的键 —— 整串塞进 \orgname 是有意的降级
-    local org = tex_of(aff.orgname) or tex_of(aff.name)
+    -- 同样是 `name:` 优先
+    local org = tex_of(aff.name) or tex_of(aff.orgname)
     if org then parts[#parts + 1] = '\\orgname{' .. org .. '}' end
 
     local address = {}
@@ -491,7 +495,7 @@ local function title_block(meta)
     local line, starred_affils = author_macro(a)
     if line then
       lines[#lines + 1] = line
-      for _, n in ipairs(starred_affils or {}) do starred[n] = true end
+      for _, n in ipairs(starred_affils) do starred[n] = true end
     end
   end
 

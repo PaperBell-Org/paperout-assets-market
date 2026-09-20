@@ -3,7 +3,7 @@
 
   pandoc 把目标格式当作 argv[1] 传给外部 filter，pandoc-crossref 就靠它决定行为。
   而当 defaults 的 `to:` 指向一个自定义 Lua writer 时，这个字符串是 **writer 文件的
-  路径**（实测 FORMAT=[…/filters/latex-submission.lua]），crossref 认不出 LaTeX，
+  路径**（实测 FORMAT=[…/writers/latex-submission.lua]），crossref 认不出 LaTeX，
   于是退回通用模式，做三件对 LaTeX 有害的事：
 
     * 把「Figure 1: 」烤进 caption —— \caption 之后还会再排一次 "Fig. 1"

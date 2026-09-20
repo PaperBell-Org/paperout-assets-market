@@ -52,13 +52,16 @@ function recipeTo(defaults) {
   return String(parseDefaultsFile(defaults).doc.to || '').trim();
 }
 
-// What a recipe actually produces. fingerprint() and fullBuild() both need this, and
-// deriving it twice means a new output kind only gets handled in whichever one you
-// remember to edit.
-//   zip    — `to:` is a path to a custom Lua writer (pandoc 3 accepts that)
-//   docx   — Word
-//   beamer — slides
+// What a recipe produces, and therefore how it is fingerprinted:
+//   zip    — `to:` is a path to a custom Lua writer (pandoc 3 accepts that). Run the real
+//            export and hash the sorted entry list plus each entry's content. Re-running
+//            the chain with `-t latex` would bypass the writer completely, leaving zip
+//            layout, figure packaging and bibliography extraction untested.
+//   docx   — the produced document.xml (stable; timestamps live elsewhere in the zip)
+//   beamer — the beamer LaTeX source
 //   latex  — everything else; PDF recipes render this via xelatex at full build
+// Hash entry CONTENT, never zip bytes: deflate is not a fixed function, zlib's exact bit
+// stream varies between versions (same reason scripts/lib/docx.mjs compares entries).
 function outputKind(to) {
   if (to.endsWith('.lua')) return 'zip';
   if (to === 'docx') return 'docx';
@@ -79,25 +82,19 @@ function normalize(buf) {
 // --resource-path points it at the sample's own directory.
 //
 // A reproducible text fingerprint of the recipe's real output, honoring its FORMAT:
-//   docx   → the produced document.xml (stable; timestamps live elsewhere in the zip)
-//   *.lua  → a custom Lua writer producing a zip: the sorted entry list plus a hash
-//            of each entry's content (see zipFingerprint)
-//   beamer → the beamer LaTeX source
-//   else   → the LaTeX source (PDF recipes render this via xelatex at full build)
-
-// A recipe whose `to:` is a path to a custom Lua writer (pandoc 3 accepts that) must
-// be fingerprinted by RUNNING it. Re-running the chain with `-t latex`, as the generic
-// branch below does, bypasses the writer completely — zip layout, figure packaging,
-// bibliography extraction and .bst selection would all go untested and the golden
-// would prove nothing.
-//
-// Hash entry CONTENT, never the zip bytes: deflate is not a fixed function, zlib's
-// exact bit stream varies between versions (the same reason scripts/lib/docx.mjs
-// compares entries rather than file hashes).
+// Which zip entries can carry an absolute repo path worth normalizing.
 const TEXT_ENTRY = /\.(tex|bib|cls|bst|txt|md|json|ya?ml)$/i;
+
+// Every export lands in its own temp dir, swept on exit — --all --full otherwise
+// leaves one directory per recipe behind, payload and all, on every local run.
+const tmpDirs = [];
+process.on('exit', () => {
+  for (const dir of tmpDirs) fs.rmSync(dir, { recursive: true, force: true });
+});
 
 function exportTo(id, sample, defaults, ext) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
+  tmpDirs.push(tmp);
   const out = path.join(tmp, `out.${ext}`);
   execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', out], { stdio: 'pipe' });
   return out;
@@ -121,36 +118,33 @@ function fingerprint(id) {
   const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
   const kind = outputKind(recipeTo(defaults));
 
+  // `artifact` is the real export this fingerprint already had to produce, handed back
+  // so --full can stat it instead of exporting the same thing a second time. The
+  // latex/beamer kinds return none: their fingerprint streams `-t <kind>` to stdout,
+  // while a full build renders a PDF — genuinely two different exports.
   if (kind === 'zip') {
     const zip = exportTo(id, sample, defaults, 'zip');
-    // Remember it: a --full run would otherwise repeat this entire export just to
-    // assert the file is non-empty, which this run has already proven.
-    built.set(id, zip);
-    return zipFingerprint(zip);
+    return { fp: zipFingerprint(zip), artifact: zip };
   }
   if (kind === 'docx') {
     const docx = exportTo(id, sample, defaults, 'docx');
-    built.set(id, docx);
-    const xml = execFileSync('unzip', ['-p', docx, 'word/document.xml'], { maxBuffer: 64 * 1024 * 1024 });
-    return sha256(normalize(xml));
+    const xml = readZip(fs.readFileSync(docx)).find((e) => e.name === 'word/document.xml').data;
+    return { fp: sha256(normalize(xml)), artifact: docx };
   }
 
   const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-t', kind, '-o', '-'], {
     maxBuffer: 64 * 1024 * 1024,
   });
-  return sha256(normalize(out));
+  return { fp: sha256(normalize(out)) };
 }
 
-// Recipes whose fingerprint already required a real export, keyed by id, so --full
-// can stat that artifact instead of exporting a second time.
-const built = new Map();
-
-function fullBuild(id) {
-  const sample = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md');
-  const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
-  const kind = outputKind(recipeTo(defaults));
-  const ext = kind === 'zip' ? 'zip' : kind === 'docx' ? 'docx' : 'pdf';
-  const outFile = built.get(id) ?? exportTo(id, sample, defaults, ext);
+function fullBuild(id, artifact) {
+  const outFile = artifact ?? exportTo(
+    id,
+    path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md'),
+    path.join(ROOT, 'defaults', `${id}.yaml`),
+    'pdf', // only latex/beamer reach here, and both render a PDF
+  );
   const size = fs.existsSync(outFile) ? fs.statSync(outFile).size : 0;
   if (size <= 0) throw new Error('produced empty output');
   return size;
@@ -171,7 +165,7 @@ let failed = 0;
 for (const id of targets) {
   const goldenPath = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'expected.fingerprint');
   try {
-    const fp = fingerprint(id);
+    const { fp, artifact } = fingerprint(id);
     if (updateGolden) {
       fs.writeFileSync(goldenPath, fp + '\n');
       console.error(`${id}: golden updated → ${fp.slice(0, 12)}…`);
@@ -188,7 +182,7 @@ for (const id of targets) {
       }
     }
     if (full) {
-      const size = fullBuild(id);
+      const size = fullBuild(id, artifact);
       console.error(`${id}: full build ok (${size} bytes)`);
     }
   } catch (e) {

@@ -79,7 +79,9 @@ orgdiv, orgname, street, city, postcode, state, country
 
 That order lives in `ORG_FIELDS` in `filters/manuscript-docx.lua`. Nature-LaTeX maps each
 field to its own SN macro instead, so the two routes show the same information in the form
-each format expects.
+each format expects — its address fields are `ADDRESS_FIELDS` in
+`writers/latex-submission.lua`. Adding a field means editing both tables and this
+paragraph.
 
 ## Abstract and keywords
 

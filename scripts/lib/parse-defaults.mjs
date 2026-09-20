@@ -7,7 +7,7 @@
 //   - filters: [ ${USERDATA}/filters/<x>.lua, ${.}/../filters/<x>.lua, citeproc, ... ]
 //   - metadata.crossrefYaml: ${USERDATA}/defaults/crossref.yaml
 //   - csl: (must be commented out; if active, it is a dependency)
-//   - to:              ${USERDATA}/filters/<x>.lua        (custom Lua writers)
+//   - to:              ${USERDATA}/writers/<x>.lua        (custom Lua writers)
 //
 // Two portable prefixes appear in the wild and both are valid (no machine paths):
 //   ${USERDATA}/foo   and   ${.}/../foo   → repo-relative `foo`.
@@ -15,6 +15,7 @@
 
 import fs from 'node:fs';
 import YAML from 'yaml';
+import { CONSUMPTION_DIRS } from './catalog.mjs';
 
 export const KNOWN_SYSTEM_DEPS = new Set(['citeproc', 'pandoc-crossref']);
 
@@ -35,7 +36,7 @@ export function isPortableRef(ref) {
  * portability here and a non-portable reference is silently ignored instead of failing
  * the build — exactly the bug that invariant exists to catch.
  */
-export function looksLikePath(value) {
+function looksLikePath(value) {
   const s = String(value).trim();
   return s.includes('/') || s.includes('$');
 }
@@ -49,7 +50,7 @@ function refToRequire(ref, requires, rawRefs) {
   if (typeof ref !== 'string' || !ref.trim()) return;
   rawRefs.push(ref);
   const rel = stripVar(ref);
-  if (/^(filters|writers|templates|defaults|csl)\//.test(rel)) requires.add(rel);
+  if (new RegExp(`^(${CONSUMPTION_DIRS.join('|')})/`).test(rel)) requires.add(rel);
 }
 
 /** Recursively check whether a key resolves to a non-null value anywhere top-level or under metadata. */

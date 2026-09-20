@@ -65,7 +65,7 @@ in `catalog/csl-styles.yaml`, resolved on demand from the official
 export works without a network. The plugin fetches a style to the user's disk for
 `pandoc --csl`.
 
-Keeping metadata out of the four asset dirs keeps the packaged zips clean and gives
+Keeping metadata out of the asset dirs keeps the packaged zips clean and gives
 the frontend one predictable tree to read.
 
 ---
@@ -77,7 +77,7 @@ Nothing is downloaded by hand. Each git tag publishes a **GitHub Release** carry
 
 - **Whole toolchain (as today).** Paste the stable URL
   `…/releases/latest/download/full.zip` into the plugin's *Pandoc assets URL* and
-  download. Files land under `PaperBell/pandoc/` with the `defaults/ filters/
+  download. Files land under `PaperBell/pandoc/` with the `defaults/ filters/ writers/
   templates/ csl/` layout — identical to the current setup. Every bundle is published
   under two names: `<id>-<version>.zip`, which is what `index.json` points at and
   pins a `sha256` to, and an unversioned `<id>.zip` alias. Paste the alias — a URL

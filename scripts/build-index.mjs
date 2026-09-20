@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Scan the four consumption dirs + catalog, validate the invariants, and emit
+// Scan the consumption dirs + catalog, validate the invariants, and emit
 // index.json (the manifest the plugin and frontend consume).
 //
 //   node scripts/build-index.mjs --tag 1.0.0 [--out dist/index.json] [--strict] [--check]
@@ -84,13 +84,16 @@ function leafAsset(rel, type, tag, docs) {
 // toolchain actually knows are accepted, so a typo fails the build instead of silently
 // producing a prompt for a binary that does not exist.
 function systemDeps(id, parsed, manifest, errors) {
-  const declared = manifest?.systemDeps ?? [];
-  for (const dep of declared) {
+  const merged = [...new Set([...parsed.systemDeps, ...(manifest?.systemDeps ?? [])])];
+  const known = merged.filter((dep) => KNOWN_SYSTEM_DEPS.has(dep));
+  for (const dep of merged) {
     if (!KNOWN_SYSTEM_DEPS.has(dep)) {
-      errors.push(`recipe ${id}: unknown systemDeps entry "${dep}" (known: ${[...KNOWN_SYSTEM_DEPS].join(', ')})`);
+      // Checked for BOTH sources. A typo in a bare `filters:` token used to sail
+      // through and ship the plugin a prompt to install a binary that does not exist.
+      errors.push(`recipe ${id}: unknown system dependency "${dep}" (known: ${[...KNOWN_SYSTEM_DEPS].join(', ')})`);
     }
   }
-  return [...new Set([...parsed.systemDeps, ...declared])];
+  return known;
 }
 
 export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
