@@ -61,6 +61,11 @@ metadata:
   # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。
   # 关行号：lineno: false
 
+  # 这里**故意不写 CJKmainfont**，理由同 sn-refstyle：metadata: 会盖掉笔记的
+  # frontmatter。中文字体由 writer 在检测到文档真含 CJK 时才设（见
+  # writers/latex-submission.lua 的 DEFAULT_CJK_FONT），所以笔记写
+  # `CJKmainfont: 你的字体` 是能生效的，纯英文稿也不会凭空带上一个用不到的字体。
+
   # For pandoc-crossref
   crossrefYaml: ${USERDATA}/defaults/crossref.yaml
   chapters: false
@@ -91,7 +96,8 @@ variables:
 #   ├── sn-nature.bst   当前样式对应的那一个
 #   └── figures/…       所有被引用的图，文件名已净化成纯 ASCII
 #
-# 编译：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+# 编译：xelatex → bibtex → xelatex ×2（BibTeX，不是 biber）。
+# 纯英文的稿子用 pdflatex 也可以；含中文就必须 xelatex。
 #
 # 与 paperbell.yaml（PDF 链）有意的差别：
 # - 没有 embed-resources —— 正好相反，图片要单独成文件
@@ -99,7 +105,9 @@ variables:
 # - 没有 preamble.lua / callout.lua / codeblock.lua —— 这三个成套，callout 产
 #   \begin{tcolorbox}、preamble 往 header-includes 塞 tcolorbox/tikz/algorithm。
 #   投稿源文件不需要 callout 盒子，多带一坨宏包只是多一片编译失败面
-# - 没有任何 CJK / mainfont 字体元数据 —— 会触发 fontspec，pdflatex 路线上必炸
+# - 没有 mainfont 等拉丁字体元数据 —— 会触发 fontspec，pdflatex 路线上必炸。
+#   中文字体是例外，但由 writer 按文档内容决定，且模板里那段包在 \ifXeTeX 里，
+#   所以纯英文稿的 pdflatex 路线一点不受影响（实测 main.log 里没有 fontspec/xeCJK）。
 #
 # 版式全部由 sn-jnl.cls 决定：换刊改 sn-refstyle 即可，不用动 filter 或模板。
 # ============================================================

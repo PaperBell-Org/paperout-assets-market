@@ -9,6 +9,11 @@ authors:
     corresponding: alan@example.org
   # Springer Nature 的结构化写法：同一份笔记要能同时导 Word 和 Nature-LaTeX 投稿包，
   # 所以两套姓名字段都得认。少了这一位，fnm/sur 的作者会整行消失而没人发现。
+  # 双语署名。Word 这条链不拆姓名（Word 没有 given/surname 槽位），所以这一条锁的是
+  # 中文名要原样留下 —— cjk_format.lua 在作者行上不能把它吃掉或加错字距。
+  # 同一个名字在 nature-latex 那边会拆成 \fnm{Xiaoyu} \sur{Qiu 邱小雨}。
+  - name: Xiaoyu Qiu 邱小雨
+    affiliation: [1]
   - fnm: Grace
     spfx: van
     sur: Hopper

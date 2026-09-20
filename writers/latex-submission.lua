@@ -44,6 +44,7 @@
 
 local ASSET_SUBDIR = 'templates/nature'
 local DEFAULT_REFSTYLE = 'sn-nature'
+local DEFAULT_CJK_FONT = 'Songti SC'
 
 -- documentclass 选项 → cls 实际发出的 \bibliographystyle{} 名字。
 -- 不是简单拼接，两处上游不一致：
@@ -394,13 +395,91 @@ end
 
 -- --------------------------------------------------------- 4. 抬头（title block）
 
--- 「Shuang Song」→ \fnm{Shuang} \sur{Song}。按最后一个空格拆；
--- 没有空格就整串当姓（单名作者、机构作者都属于这种）。
+-- CJK 码位。必须按码位判断，不能用「非 ASCII」—— Jürgen、Müller 这类名字也是
+-- 非 ASCII，但它们该走正常的拉丁拆分。
+--
+-- 范围对齐 filters/cjk_format.lua 的 is_han（仓库里最常用的那份），只多一段韩文
+-- 音节：那边是给中日混排调字距的、用不着韩文，这里是给双语署名分段的，韩国作者
+-- 同样会写「Minjun Kim 김민준」。filters/quotes-i18n.lua 还有第三份，用途又不同
+-- （标点和全角）。三处里任何一处要放宽范围，另外两处都该一起看。
+local function is_cjk(cp)
+  return (cp >= 0x3400 and cp <= 0x4DBF)     -- 扩展 A
+      or (cp >= 0x4E00 and cp <= 0x9FFF)     -- 统一表意
+      or (cp >= 0xF900 and cp <= 0xFAFF)     -- 兼容表意
+      or (cp >= 0x3040 and cp <= 0x30FF)     -- 日文假名
+      or (cp >= 0xAC00 and cp <= 0xD7AF)     -- 韩文音节
+      or (cp >= 0x20000 and cp <= 0x2A6DF)   -- 扩展 B —— 生僻字人名正在这一段
+end
+
+-- 一段文本里有没有 CJK。
+--
+-- 先按字节快速排除：上面那些码位在 UTF-8 里都以 0xE3–0xEF 或 0xF0 打头，没有这些
+-- 前导字节就不可能有 CJK，省掉整段逐码位遍历（正文可能有十万字符）。
+-- utf8.codes 遇到非法 UTF-8 会抛错，所以再用 utf8.len 探一下（它返回 nil 而不抛），
+-- 非法字节按拉丁处理。
+local function has_cjk(text)
+  if not text:find('[\227-\244]') then return false end
+  if not utf8.len(text) then return false end
+  for _, cp in utf8.codes(text) do
+    if is_cjk(cp) then return true end
+  end
+  return false
+end
+
+-- 「Shuang Song」→ \fnm{Shuang} \sur{Song}：姓 = 最后一个拉丁词，名 = 其余。
+--
+-- 中文作者常写双语署名「Shuang Song 宋爽」。直接按最后一个空格拆会得到
+-- \fnm{Shuang Song} \sur{宋爽} —— 排出来看着没错，但 \fnm/\sur 是 SN 拿去做
+-- 元数据（given name / surname）的，这么拆语义是坏的。所以 CJK 段整体跟在姓后面：
+--   Shuang Song 宋爽 → \fnm{Shuang} \sur{Song 宋爽}
+-- 纯 CJK 姓名（宋爽）没有拉丁段，整串当姓。
 local function split_name(full)
   if not full then return nil, nil end
-  local first, last = full:match('^(.*)%s+(%S+)$')
-  if first then return first, last end
-  return nil, full
+
+  local latin, cjk = {}, {}
+  local seen_latin, cjk_before_latin = false, false
+  -- 不能用 %S+ 分词：Lua 的 %s 把 0xA0 当空白（实测它是唯一这样的高位字节），
+  -- 而 0xA0 是很多汉字 UTF-8 编码的尾字节 —— 丠 U+4E20 就是 E4 B8 A0。%S+ 会把
+  -- 那个字节当成分隔符吃掉，剩下半个字符。这里写死 ASCII 空白。
+  for word in full:gmatch('[^ \t\n\v\f\r]+') do
+    if has_cjk(word) then
+      cjk[#cjk + 1] = word
+      if not seen_latin then cjk_before_latin = true end
+    else
+      latin[#latin + 1] = word
+      seen_latin = true
+    end
+  end
+
+  local latin_words = #latin
+  local sur = table.remove(latin) or ''
+  if #cjk > 0 then
+    sur = (sur ~= '' and (sur .. ' ') or '') .. table.concat(cjk, ' ')
+  end
+  local fnm = #latin > 0 and table.concat(latin, ' ') or nil
+
+  -- 拿不准就出声。本文件在别处（引文 key 解析不到、图读不出来、没有作者）都是
+  -- 这么做的，姓名不该是唯一一处静默降级：
+  --   Maria del Carmen García López → \sur{López}（姓其实是 García López）
+  --   World Health Organization     → 机构被当成人名拆开
+  --   宋爽 Shuang Song              → CJK 写在前面，会被挪到后面去
+  -- 没有哪张码位表能修好这些，这正是该告警、而不是把表做得更大的理由。
+  -- 纯 CJK 姓名不算「顺序可疑」—— 它根本没有拉丁段可比。
+  -- 「名 + 中间名缩写 + 姓」（Bob A. Jones、Robert W. Middeke-Conlin）是极常见的
+  -- 正常写法，拆得也对，不能报 —— 告警一吵就会被当噪音忽略，那还不如不加。
+  -- 中间全是单个大写字母（可带点）就认定是缩写。
+  local middle_is_initials = latin_words > 2
+  for i = 2, #latin do
+    if not latin[i]:match('^%u%.?$') then middle_is_initials = false end
+  end
+
+  if (latin_words > 2 and not middle_is_initials) or (cjk_before_latin and latin_words > 0) then
+    -- 用 %s 而不是 %q：%q 会把非 ASCII 转义成数字，告警里的名字就没法看了。
+    warn(('could not confidently split "%s" into given/family name — wrote \\fnm{%s} \\sur{%s}; set fnm:/sur: explicitly to control it')
+      :format(full, fnm or '', sur))
+  end
+
+  return fnm, sur
 end
 
 local function author_macro(a)
@@ -482,6 +561,16 @@ local function affil_macro(aff, index, starred)
 
   if #parts == 0 then return nil end
   return ('\\affil%s[%s]{%s}'):format(starred and '*' or '', index, table.concat(parts, ', '))
+end
+
+-- 整篇（正文 + 抬头用得到的元数据）里有没有 CJK。
+local function doc_has_cjk(doc)
+  if has_cjk(pandoc.utils.stringify(doc.blocks)) then return true end
+  for _, key in ipairs { 'title', 'authors', 'author', 'affiliations', 'abstract', 'keywords' } do
+    local v = doc.meta[key]
+    if v ~= nil and has_cjk(pandoc.utils.stringify(v)) then return true end
+  end
+  return false
 end
 
 local function title_block(meta)
@@ -569,6 +658,17 @@ function ByteStringWriter(doc, opts)
 
   -- 4 ──────────────────────────────────────────────────────── main.tex
   doc.meta['sn-options'] = pandoc.MetaString(table.concat(options, ','))
+
+  -- 只有文档真含 CJK 时才声明中文字体，而且不覆盖笔记自己写的。
+  --
+  -- 不写进 defaults 的 metadata:，是因为那一层会盖掉笔记的 frontmatter（同一个
+  -- 文件里 sn-refstyle 正是为此故意没放在那儿），写过去作者就永远改不动了。
+  -- 不无条件设，是因为模板的 LuaTeX 分支没有字体回退：纯英文稿带上这个变量，
+  -- 会让改用 lualatex 的合作者在一个文档根本用不到的字体上硬失败。
+  -- 实测一次字体探测失败约 1.9 秒且不缓存 —— 用不上就别去探。
+  if doc.meta.CJKmainfont == nil and doc_has_cjk(doc) then
+    doc.meta.CJKmainfont = pandoc.MetaString(DEFAULT_CJK_FONT)
+  end
 
   local block = title_block(doc.meta)
   if block then

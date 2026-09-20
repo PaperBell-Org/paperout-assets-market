@@ -29,7 +29,10 @@ Two spellings of a name are accepted. **`name:` wins when both are present.**
 
 ```yaml
 authors:
-  # Flat — the original form. Nature-LaTeX splits it on its LAST space into \fnm{}/\sur{}.
+  # Flat — the original form. Nature-LaTeX splits it into \fnm{}/\sur{} on the last
+  # space, except that a trailing CJK part rides with the surname:
+  #   Shuang Song 宋爽 → \fnm{Shuang} \sur{Song 宋爽}
+  # A wholly-CJK name is not split; non-ASCII that is not CJK (Jürgen) splits normally.
   - name: Ada Lovelace
     affiliation: [1, 2]        # scalar or list; `affil:` is accepted as an alias
     corresponding: ada@example.org   # an email, or `true` for the star with no address

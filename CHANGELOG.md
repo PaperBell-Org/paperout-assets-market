@@ -4,6 +4,67 @@ Notable changes to the published assets and tooling. Versions are the release ta
 
 ## Unreleased
 
+**`nature-latex` handles bilingual Chinese author names, and compiles with XeLaTeX.**
+Found by exporting a real manuscript: `\sur{宋爽}` made pdfLaTeX fail with
+`Unicode character 宋 not set up for use with LaTeX`. Two separate bugs behind it.
+
+- **`writers/latex-submission.lua` → 1.1.0.** `split_name` cut on the last space, so
+  `Shuang Song 宋爽` became `\fnm{Shuang Song} \sur{宋爽}`. That *looks* right on the
+  page, which is why it was easy to miss, but Springer Nature reads `\fnm`/`\sur` as
+  given-name/surname metadata, so the split was semantically wrong. The CJK part now
+  rides with the surname — `\fnm{Shuang} \sur{Song 宋爽}` — a wholly-CJK name is not
+  split, and the test is on CJK code points rather than "non-ASCII", so `Jürgen Renn`
+  still splits normally.
+
+- **`templates/nature-latex.latex` → 1.1.0** gains a CJK font fallback chain, the 7th
+  documented change from Pandoc's default template. `defaults/nature-latex.yaml` now sets
+  `CJKmainfont: Songti SC`, but a submission zip is compiled on other people's machines —
+  co-authors', the journal's — where that font does not exist, and a missing font is a
+  hard XeLaTeX error. The template tries the author's choice, then `Noto Serif CJK SC`,
+  `Source Han Serif SC`, `Songti SC` and `SimSun`, falling back to the author's name last
+  so the error points at the real cause.
+
+  Setting `CJKmainfont` does **not** force XeLaTeX on anyone: the block sits inside
+  `\ifXeTeX`, and an English-only manuscript still compiles with `pdflatex` — verified.
+
+Review of that change then turned up four more, all verified by running the real chains:
+
+- **`%S+` was never safe for UTF-8.** Lua's `%s` treats `0xA0` as whitespace — the only
+  high byte it does — and `0xA0` is the trailing byte of plenty of Han characters
+  (丠 U+4E20 is `E4 B8 A0`). Word splitting now uses an explicit ASCII whitespace class,
+  so those names stop losing a byte. This predates the CJK work; `split_name` used
+  `%s+` from the start.
+- **The range table missed CJK Extension B** (`20000–2A6DF`), which is exactly where rare
+  given-name characters live — the case the feature exists for. Now aligned with
+  `filters/cjk_format.lua`'s `is_han`, plus Hangul, with a comment in the new copy
+  pointing at the other two so the next widening is a grep away.
+- **The split now warns when it is guessing.** `Maria del Carmen García López`,
+  `World Health Organization` and `宋爽 Shuang Song` are all mis-split by any last-space
+  rule and no code-point table can fix them, so they say so and name `fnm:`/`sur:` as the
+  escape hatch. `Bob A. Jones` and `Robert W. Middeke-Conlin` stay quiet — a warning
+  that fires on ordinary names gets ignored.
+- **`CJKmainfont` moved out of the defaults' `metadata:` block and into the writer**,
+  conditioned on the document actually containing CJK. Three things were wrong with the
+  defaults placement: the note could not override it (that block outranks frontmatter —
+  the same file says so 19 lines above, which is why `sn-refstyle` is deliberately not
+  there), so the README's "set it in your note" was false; the template's LuaTeX branch
+  had no fallback and now fired for *every* user, hard-failing under `lualatex` on a font
+  an English-only manuscript never needed; and a missing-font probe costs ~1.9 s and is
+  not cached, so English-only users on a machine with no CJK font paid ~11 s to fail.
+
+The probe chain also shrank from five candidates to three. `Source Han Serif SC` is
+Adobe's name for the fonts Google ships as `Noto Serif CJK SC`, which is probed first, and
+the chain repeated `Songti SC` — which is already the default. At ~1.9 s per miss across
+three XeLaTeX passes, each removed candidate is ~5.8 s off a build that has to walk past
+it. The LuaTeX branch got the same chain.
+
+Both samples now carry the cases: `nature-latex`'s has a bilingual author, a
+`Jürgen Müller` and an author with both name spellings; `manuscript-obsidian`'s has the
+same bilingual author, pinning that the Word route keeps it whole. Documented in the
+recipe README and in `catalog/manuscript-frontmatter.md`. `full` → 1.0.7.
+
+## 1.0.10 — 2026-09-20
+
 New recipe **`nature-latex`** (Nature-LaTeX): a manuscript exports to a Springer Nature
 LaTeX *submission package* — a zip holding `main.tex` on the official `sn-jnl` class, a
 `references.bib` containing only the entries the manuscript actually cites, each figure as

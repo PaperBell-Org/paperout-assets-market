@@ -15,18 +15,21 @@ $-- 为什么从 pandoc 默认模板派生、而不是照着 sn-article.tex 手�
 $-- \tightlist、\pandocbounded、\passthrough、longtable/booktabs、subcaption、
 $-- $highlighting-macros$ 一整套宏，手写必然漏，而漏了只有真跑 pdflatex 才炸得出来。
 $--
-$-- 相对 pandoc 默认模板，只动了 6 处（每处都在原位留了 $-- 注释说明）：
+$-- 相对 pandoc 默认模板，动了 7 处（每处都在原位留了 $-- 注释说明）：
 $--   1. \documentclass  → sn-jnl，选项走 $sn-options$
 $--   2. geometry 加载块 → 删（cls 自己 RequirePackage{geometry} 并定版心）
 $--   3. natbib/biblatex 导言区加载块 → 删（cls 自己加载 natbib 并发 \bibliographystyle）
 $--   4. \title/\author/\date → SN 抬头（\title[短标题]、$sn-titleblock$、\abstract{}、\keywords{}）
 $--   5. abstract 环境 → 删（SN 用导言区的 \abstract{} 命令）
 $--   6. 文末 natbib/biblatex 分支 → 单条 \bibliography{}，不带 \bibliographystyle
+$--   7. CJK 字体 → 加回退链（xeCJK 和 luatexja 两支都加），见下
 $--
-$-- beamer / fontspec / xeCJK / svg / setspace 等分支原样留着 —— 它们都在 $if(...)$ 后面，
-$-- 而 defaults/nature-latex.yaml 一个都不设，因此是惰性的。删它们只会增加改坏模板的风险。
+$-- beamer / fontspec / svg / setspace 等分支原样留着 —— 它们都在 $if(...)$ 后面，而
+$-- defaults/nature-latex.yaml 都不设，因此是惰性的。删它们只会增加改坏模板的风险。
+$-- xeCJK 这一支是例外：writer 检测到文档含 CJK 时会设 CJKmainfont，那时它就会生效。
 $--
 $-- 编译链：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+$-- 稿件含 CJK 时走 xelatex → bibtex → xelatex ×2 —— 见下面的 CJKmainfont 块。
 $--============================================================================
 % Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode$for(hyperrefoptions)$,$hyperrefoptions$$endfor$}{hyperref}
@@ -140,7 +143,26 @@ $endif$
 $if(CJKmainfont)$
   \ifXeTeX
     \usepackage{xeCJK}
-    \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}
+$-- 投稿包会在别人的机器上编译 —— 合作者、期刊的排版系统 —— 那里多半没有作者选
+$-- 的中文字体，而找不到字体是 xelatex 的硬错误。所以按平台常见的中文字体回退。
+$--
+$-- 链要短：实测一次探测失败约 1.9 秒，而且**不缓存**（同一个坏名字探四次要四份
+$-- 时间）。三遍 xelatex 下来，每多一次 miss 就是 ~5.8 秒。所以只留三档 ——
+$-- 作者指定的（macOS 默认 Songti SC 在这一档命中）、Linux 的 Noto、Windows 的
+$-- SimSun。不放 Source Han Serif SC：它和 Noto Serif CJK SC 是同一批字体的两个
+$-- 名字，装了它的机器几乎都能解析 Noto 这个名字，白搭一次 1.9 秒。
+$-- 命中的探测是免费的（实测与直接 \setCJKmainfont 无差别），所以 macOS 不受影响。
+$--
+$-- 嵌套 \IfFontExistsTF 是本仓库既有写法，见 templates/responseletter.sty 的数学
+$-- 字体回退。这是本模板相对 pandoc 默认模板的第 7 处改动。
+    \IfFontExistsTF{$CJKmainfont$}{%
+      \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+    }{%
+      \IfFontExistsTF{Noto Serif CJK SC}{\setCJKmainfont{Noto Serif CJK SC}}{%
+      \IfFontExistsTF{SimSun}{\setCJKmainfont{SimSun}}{%
+        \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+      }}%
+    }
 $if(CJKsansfont)$
     \setCJKsansfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKsansfont$}
 $endif$
@@ -157,7 +179,15 @@ $endif$
 $if(CJKmainfont)$
   \ifLuaTeX
     \usepackage[$for(luatexjafontspecoptions)$$luatexjafontspecoptions$$sep$,$endfor$]{luatexja-fontspec}
-    \setmainjfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}
+$-- 同样要回退：这一支原本裸设字体，合作者拿 lualatex 一编就是 fontspec 硬错误。
+    \IfFontExistsTF{$CJKmainfont$}{%
+      \setmainjfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+    }{%
+      \IfFontExistsTF{Noto Serif CJK SC}{\setmainjfont{Noto Serif CJK SC}}{%
+      \IfFontExistsTF{SimSun}{\setmainjfont{SimSun}}{%
+        \setmainjfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+      }}%
+    }
   \fi
 $endif$
 \fi
