@@ -14,7 +14,7 @@ package their submission system expects:
 
 ```
 submission.zip
-├── main.tex        \documentclass[referee,lineno,pdflatex,sn-nature]{sn-jnl}
+├── main.tex        \documentclass[pdflatex,sn-nature]{sn-jnl}
 ├── references.bib  only the entries this manuscript cites
 ├── sn-jnl.cls      the Springer Nature document class
 ├── sn-nature.bst   the reference style your `sn-refstyle` selected
@@ -127,17 +127,32 @@ route, so writing them costs you nothing there.
 
 ## Options
 
+**The default is the typeset form** — single-spaced, no line numbers, figures and tables
+collected at the end. That is what the journal prints, so it is what you check before
+uploading. Nothing to set; it is what you get.
+
 | Frontmatter | Default | Effect |
 |---|---|---|
+| `referee:` | `false` | Double line spacing, via the class's `referee` option. |
+| `lineno:` | `false` | Line numbers, via the class's `lineno` option. |
+| `figures-at-end:` / `tables-at-end:` | `true` | Collect floats at the end under their own headings. `false` leaves them in place. |
 | `sn-refstyle:` | `sn-nature` | Reference style. One of `sn-nature`, `sn-basic`, `sn-mathphys-num`, `sn-mathphys-ay`, `sn-aps`, `sn-vancouver-num`, `sn-vancouver-ay`, `sn-apa`, `sn-chicago`. Selects both the documentclass option and the `.bst` packed into the zip. |
-| `sn-options:` | `[referee, lineno, pdflatex, <sn-refstyle>]` | Takes over the documentclass option list entirely, e.g. `[pdflatex, sn-basic, twocolumn]`. If you set this, keep an `sn-*` style in the list or the class emits no `\bibliographystyle` and your references vanish. |
-| `lineno:` | `true` | Line numbers, via the class's `lineno` option. `false` drops it. |
-| `figures-at-end:` / `tables-at-end:` | `false` | Move floats to the end under their own headings. |
+| `sn-options:` | `[pdflatex, <sn-refstyle>]` | Takes over the documentclass option list entirely, e.g. `[pdflatex, sn-basic, twocolumn]`. If you set this, keep an `sn-*` style in the list or the class emits no `\bibliographystyle` and your references vanish. |
 | `nocite:` | — | Entries that belong in the reference list without being cited in the text. |
 
-The default option set is the **review** form: `referee` gives double line spacing and
-`lineno` numbers the lines, which is what most journals want for an initial submission. For
-something closer to the typeset article, set `sn-options: [pdflatex, sn-nature]`.
+### Sending it out for review instead
+
+Many journals want an initial submission double-spaced and line-numbered. Two keys:
+
+```yaml
+---
+referee: true
+lineno: true
+---
+```
+
+That yields `\documentclass[referee,lineno,pdflatex,sn-nature]{sn-jnl}`. Floats stay at the
+end unless you also set `figures-at-end: false`.
 
 ## What you get, and what to check
 

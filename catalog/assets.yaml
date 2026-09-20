@@ -520,7 +520,7 @@ defaults/crossref.yaml:
       Figure/Figures and equation numbering to the ($i$) template.
     zh: 共享的 pandoc-crossref 配置片段，把图前缀设为 Figure/Figures，公式编号用 ($i$) 模板。
 writers/latex-submission.lua:
-  version: 1.1.0
+  version: 1.2.0
   title:
     en: Submission zip writer
     zh: 投稿源文件打包 writer
@@ -564,3 +564,18 @@ filters/crossref-latex.lua:
       传给 filter，而当 `to:` 指向自定义 Lua writer 时，这个字符串是 writer 的文件路径
       —— pandoc-crossref 认不出目标是 LaTeX 而退化：把图号烤进题注、把交叉引用冻成死
       文本。凡是 `to:` 为 Lua writer 的链，都用本文件替代裸的 `pandoc-crossref` token。"
+filters/nature-latex-layout.lua:
+  version: 1.0.0
+  title:
+    en: Nature-LaTeX layout defaults
+    zh: Nature-LaTeX 版式默认值
+  description:
+    en: "Fills in the nature-latex recipe's layout defaults — figures and tables collected
+      at the end — leaving a note's own `figures-at-end:` / `tables-at-end:` free to
+      override them. A filter rather than a defaults `metadata:` entry because that block
+      outranks the document's frontmatter, so a value written there could never be turned
+      off. Must run before figures-at-end.lua, which reads these keys."
+    zh: "给 nature-latex 配方填上版式默认值（图、表后置），同时让笔记自己的
+      `figures-at-end:` / `tables-at-end:` 仍能覆盖。用 filter 而不写进 defaults 的
+      `metadata:`，是因为那一层优先级高于文档 frontmatter，写在那儿就再也关不掉。
+      必须排在 figures-at-end.lua 之前 —— 那个 filter 读这两个键。"

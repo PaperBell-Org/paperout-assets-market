@@ -25,8 +25,9 @@ cite-method: natbib
 # 过滤器顺序：
 # 1. div / block_ids / mute —— 先清掉 Obsidian 私有语法（hidden Div、%% 批注、段末
 #    ^blockid、Dataview 行），否则它们会原样印进投给期刊的 .tex
-# 2. lineno_default —— 只负责把 lineno 默认置为 true；行号本身是 sn-jnl 的 class 选项，
-#    由 writer 读 meta.lineno 决定要不要加 `lineno`
+# 2. nature-latex-layout —— 本链的版式默认值（图表后置），笔记可覆盖。必须排在
+#    figures-at-end.lua 之前。不挂 lineno_default：本链默认无行号（出版形态），
+#    那个 filter 会把 lineno 强制设成 true
 # 3. 图/数学/表格/链接的常规处理，与 PDF 链一致
 # 4. crossref-latex.lua 跑 pandoc-crossref，并告诉它目标是 latex —— 直接写
 #    `pandoc-crossref` 的话，它会把本 writer 的**路径**当成格式名，认不出 LaTeX 而退化
@@ -38,7 +39,7 @@ filters:
   - ${USERDATA}/filters/div.lua
   - ${USERDATA}/filters/block_ids.lua
   - ${USERDATA}/filters/mute.lua
-  - ${USERDATA}/filters/lineno_default.lua
+  - ${USERDATA}/filters/nature-latex-layout.lua
   - ${USERDATA}/filters/quotes-i18n.lua
   - ${USERDATA}/filters/promote_figures.lua
   - ${USERDATA}/filters/image.lua
@@ -95,6 +96,9 @@ variables:
 #   ├── sn-jnl.cls      Springer Nature 文档类
 #   ├── sn-nature.bst   当前样式对应的那一个
 #   └── figures/…       所有被引用的图，文件名已净化成纯 ASCII
+#
+# 默认是**出版形态**：单倍行距、无行号、图表后置 —— 期刊排出来的样子。
+# 送审要的双倍行距和行号是两个独立开关，笔记里写 referee: true / lineno: true。
 #
 # 编译：xelatex → bibtex → xelatex ×2（BibTeX，不是 biber）。
 # 纯英文的稿子用 pdflatex 也可以；含中文就必须 xelatex。

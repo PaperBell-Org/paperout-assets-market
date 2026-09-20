@@ -2,6 +2,40 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**`nature-latex` now defaults to the typeset form** — single-spaced, no line numbers,
+figures and tables collected at the end. That is what the journal prints, so it is what
+you want to look at before uploading. Previously the default was the review form and
+getting the typeset one meant knowing three separate frontmatter keys.
+
+**This changes what an existing note exports.** To send a manuscript out for review, set
+the two keys that were the old default:
+
+```yaml
+referee: true     # double line spacing
+lineno: true      # line numbers
+```
+
+`referee` is new — it used to be welded on with no way off short of taking over
+`sn-options` entirely. Both are now independent switches, so you can have line numbers
+without double spacing or the other way round.
+
+- **New `filters/nature-latex-layout.lua`** (1.0.0) fills in `figures-at-end` /
+  `tables-at-end`, and `writers/latex-submission.lua` (→ 1.2.0) no longer forces
+  `referee,lineno` into the documentclass options. The layout defaults are a filter, not
+  a defaults `metadata:` entry, for the reason that block already documents twice: it
+  outranks the document's frontmatter, so anything written there can never be turned off.
+  `lineno_default.lua` leaves this chain — it exists to force `lineno: true`, which is now
+  the opposite of the default.
+
+Also verified for the first time that `figures-at-end.lua` works on LaTeX output at all:
+it was written for the Word route, and the recipe shipped listing it without that ever
+being checked. It does — floats land under `\section{Figures}` / `\section{Tables}` and
+cross-references still resolve to them.
+
+Recipe and bundle → 2.0.0 (the default output changed), `full` → 1.0.8.
+
 ## 1.0.11 — 2026-09-20
 
 **`nature-latex` handles bilingual Chinese author names, and compiles with XeLaTeX.**
