@@ -50,11 +50,16 @@ For the same manuscript as a Word file, use `manuscript-obsidian`; for a typeset
 - Pandoc ≥ 3.0 (needs `pandoc.zip` and custom binary writers) and `pandoc-crossref`.
 - A LaTeX installation **only if you want to compile locally** — the export itself runs no
   TeX at all. The zip is self-contained: it ships the class and the `.bst`.
-- For a manuscript containing CJK: XeLaTeX, and a Chinese font. The template tries
-  `CJKmainfont` (default `Songti SC`), then falls back through `Noto Serif CJK SC`,
-  `Source Han Serif SC`, `Songti SC` and `SimSun`, because the zip has to compile on your
-  co-authors' and the journal's machines too, and a missing font is a hard XeLaTeX error.
-  Set `CJKmainfont:` in the note to prefer a different one.
+- For a manuscript containing CJK: XeLaTeX, and a Chinese font. The font is declared
+  **only when the document actually contains CJK** — an English-only manuscript gets no
+  font metadata at all and still compiles with `pdflatex`. Set `CJKmainfont:` in the note
+  to choose one; the default is `Songti SC`, and the template falls back to
+  `Noto Serif CJK SC` then `SimSun` so the zip compiles on your co-authors' and the
+  journal's machines too, where a missing font is a hard XeLaTeX error.
+
+  The chain is deliberately short: a failed font probe costs ~1.9 s and is not cached, so
+  every extra candidate is ~5.8 s added to the three-pass build on a machine that has to
+  walk past it.
 
 ## How to select it in the plugin
 

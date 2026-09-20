@@ -27,9 +27,41 @@ Found by exporting a real manuscript: `\sur{宋爽}` made pdfLaTeX fail with
   Setting `CJKmainfont` does **not** force XeLaTeX on anyone: the block sits inside
   `\ifXeTeX`, and an English-only manuscript still compiles with `pdflatex` — verified.
 
-`catalog/recipes/nature-latex/sample/input.md` gained a bilingual author and a
-`Jürgen Müller`, so neither behaviour can regress silently. Documented in the recipe
-README and in `catalog/manuscript-frontmatter.md`. `full` → 1.0.7.
+Review of that change then turned up four more, all verified by running the real chains:
+
+- **`%S+` was never safe for UTF-8.** Lua's `%s` treats `0xA0` as whitespace — the only
+  high byte it does — and `0xA0` is the trailing byte of plenty of Han characters
+  (丠 U+4E20 is `E4 B8 A0`). Word splitting now uses an explicit ASCII whitespace class,
+  so those names stop losing a byte. This predates the CJK work; `split_name` used
+  `%s+` from the start.
+- **The range table missed CJK Extension B** (`20000–2A6DF`), which is exactly where rare
+  given-name characters live — the case the feature exists for. Now aligned with
+  `filters/cjk_format.lua`'s `is_han`, plus Hangul, with a comment in the new copy
+  pointing at the other two so the next widening is a grep away.
+- **The split now warns when it is guessing.** `Maria del Carmen García López`,
+  `World Health Organization` and `宋爽 Shuang Song` are all mis-split by any last-space
+  rule and no code-point table can fix them, so they say so and name `fnm:`/`sur:` as the
+  escape hatch. `Bob A. Jones` and `Robert W. Middeke-Conlin` stay quiet — a warning
+  that fires on ordinary names gets ignored.
+- **`CJKmainfont` moved out of the defaults' `metadata:` block and into the writer**,
+  conditioned on the document actually containing CJK. Three things were wrong with the
+  defaults placement: the note could not override it (that block outranks frontmatter —
+  the same file says so 19 lines above, which is why `sn-refstyle` is deliberately not
+  there), so the README's "set it in your note" was false; the template's LuaTeX branch
+  had no fallback and now fired for *every* user, hard-failing under `lualatex` on a font
+  an English-only manuscript never needed; and a missing-font probe costs ~1.9 s and is
+  not cached, so English-only users on a machine with no CJK font paid ~11 s to fail.
+
+The probe chain also shrank from five candidates to three. `Source Han Serif SC` is
+Adobe's name for the fonts Google ships as `Noto Serif CJK SC`, which is probed first, and
+the chain repeated `Songti SC` — which is already the default. At ~1.9 s per miss across
+three XeLaTeX passes, each removed candidate is ~5.8 s off a build that has to walk past
+it. The LuaTeX branch got the same chain.
+
+Both samples now carry the cases: `nature-latex`'s has a bilingual author, a
+`Jürgen Müller` and an author with both name spellings; `manuscript-obsidian`'s has the
+same bilingual author, pinning that the Word route keeps it whole. Documented in the
+recipe README and in `catalog/manuscript-frontmatter.md`. `full` → 1.0.7.
 
 ## 1.0.10 — 2026-09-20
 

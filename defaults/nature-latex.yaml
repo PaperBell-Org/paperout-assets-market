@@ -61,16 +61,10 @@ metadata:
   # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。
   # 关行号：lineno: false
 
-  # 中文字体。中文作者常写双语署名（Shuang Song 宋爽），\fnm/\sur 里就会带 CJK，
-  # 而 sn-jnl 不管字体、pdflatex 也排不了 CJK —— 含中文的稿子必须用 xelatex 编译
-  # （xelatex → bibtex → xelatex ×2）。
-  #
-  # 这一行对 pdflatex 是惰性的：模板里那段包在 \ifXeTeX 里，纯英文稿照旧可以
-  # pdflatex。所以设了它不会逼纯英文用户换编译器。
-  #
-  # 值只是首选 —— 模板会按 Noto Serif CJK SC / Source Han Serif SC / Songti SC /
-  # SimSun 依次回退，因为投稿包要在合作者和期刊的机器上也能编译，那里未必有这个字体。
-  CJKmainfont: Songti SC
+  # 这里**故意不写 CJKmainfont**，理由同 sn-refstyle：metadata: 会盖掉笔记的
+  # frontmatter。中文字体由 writer 在检测到文档真含 CJK 时才设（见
+  # writers/latex-submission.lua 的 DEFAULT_CJK_FONT），所以笔记写
+  # `CJKmainfont: 你的字体` 是能生效的，纯英文稿也不会凭空带上一个用不到的字体。
 
   # For pandoc-crossref
   crossrefYaml: ${USERDATA}/defaults/crossref.yaml
@@ -111,7 +105,9 @@ variables:
 # - 没有 preamble.lua / callout.lua / codeblock.lua —— 这三个成套，callout 产
 #   \begin{tcolorbox}、preamble 往 header-includes 塞 tcolorbox/tikz/algorithm。
 #   投稿源文件不需要 callout 盒子，多带一坨宏包只是多一片编译失败面
-# - 没有任何 CJK / mainfont 字体元数据 —— 会触发 fontspec，pdflatex 路线上必炸
+# - 没有 mainfont 等拉丁字体元数据 —— 会触发 fontspec，pdflatex 路线上必炸。
+#   中文字体是例外，但由 writer 按文档内容决定，且模板里那段包在 \ifXeTeX 里，
+#   所以纯英文稿的 pdflatex 路线一点不受影响（实测 main.log 里没有 fontspec/xeCJK）。
 #
 # 版式全部由 sn-jnl.cls 决定：换刊改 sn-refstyle 即可，不用动 filter 或模板。
 # ============================================================

@@ -15,9 +15,9 @@ authors:
     sur: APPEAR
     affiliation: [2]
     equalcont: These authors contributed equally to this work.
-  # 中文作者的双语署名。锁两件事：CJK 段要跟在姓后面（\sur{Qiu 邱}，不是
-  # \fnm{Xiaoyu Qiu} \sur{邱小雨}），以及 Jürgen 这种非 ASCII 但非 CJK 的名字
-  # 不能被误判成中文。
+  # 中文作者的双语署名。锁三件事：CJK 段要跟在姓后面（\fnm{Xiaoyu} \sur{Qiu 邱小雨}，
+  # 不是 \fnm{Xiaoyu Qiu} \sur{邱小雨}）；Jürgen 这种非 ASCII 但非 CJK 的名字不能
+  # 被误判成中文；以及文档含 CJK 时 writer 会自动声明 CJKmainfont。
   - name: Xiaoyu Qiu 邱小雨
     affiliation: [1]
   - name: Jürgen Müller
