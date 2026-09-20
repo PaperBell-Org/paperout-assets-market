@@ -48,8 +48,15 @@ For the same manuscript as a Word file, use `manuscript-obsidian`; for a typeset
 
 ## How to select it in the plugin
 
-Pick **Nature-LaTeX (submission sources)** in the export menu. The output is
-`submission.zip`.
+Set the note's `_longform.template` (or the **Run Pandoc Export** step's preset dropdown)
+to `nature-latex`. Leave a note's template blank to fall back to `undefined`.
+
+The step's **Template / preset** dropdown outranks its **Format** dropdown: with a preset
+selected, `Format` is ignored and the preset decides the output. This recipe writes a
+`.zip` through a custom Lua writer, so selecting it is what produces the submission
+package — there is no "zip" entry in the Format dropdown to pick instead.
+
+The output file is `submission.zip`.
 
 ## Frontmatter the title block reads
 
