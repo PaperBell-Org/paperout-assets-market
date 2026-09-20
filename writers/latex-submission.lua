@@ -394,13 +394,51 @@ end
 
 -- --------------------------------------------------------- 4. 抬头（title block）
 
--- 「Shuang Song」→ \fnm{Shuang} \sur{Song}。按最后一个空格拆；
--- 没有空格就整串当姓（单名作者、机构作者都属于这种）。
+-- CJK 码位。注意必须按码位判断，不能用「非 ASCII」—— Jürgen、Müller 这类
+-- 名字也是非 ASCII，但它们该走正常的拉丁拆分。
+local function is_cjk(cp)
+  return (cp >= 0x3400 and cp <= 0x4DBF)   -- 扩展 A
+      or (cp >= 0x4E00 and cp <= 0x9FFF)   -- 统一表意
+      or (cp >= 0xF900 and cp <= 0xFAFF)   -- 兼容表意
+      or (cp >= 0x3040 and cp <= 0x30FF)   -- 日文假名
+      or (cp >= 0xAC00 and cp <= 0xD7AF)   -- 韩文音节
+end
+
+-- 把姓名切成「拉丁部分」和「CJK 部分」，按词归类。
+local function split_cjk(full)
+  local latin, cjk = {}, {}
+  for word in full:gmatch('%S+') do
+    local has = false
+    local ok = pcall(function()
+      for _, cp in utf8.codes(word) do
+        if is_cjk(cp) then has = true return end
+      end
+    end)
+    if ok and has then cjk[#cjk + 1] = word else latin[#latin + 1] = word end
+  end
+  return table.concat(latin, ' '), table.concat(cjk, ' ')
+end
+
+-- 「Shuang Song」→ \fnm{Shuang} \sur{Song}：按最后一个空格拆。
+--
+-- 中文作者常写双语署名「Shuang Song 宋爽」。直接按最后一个空格拆会得到
+-- \fnm{Shuang Song} \sur{宋爽} —— 排出来看着没错，但 \fnm/\sur 是 SN 拿去做
+-- 元数据（given name / surname）的，这么拆语义是坏的。所以先把 CJK 段摘出来，
+-- 拉丁部分正常拆，CJK 段跟在姓后面：
+--   Shuang Song 宋爽 → \fnm{Shuang} \sur{Song 宋爽}
+-- 纯 CJK 姓名（宋爽）不拆，整串当姓。
 local function split_name(full)
   if not full then return nil, nil end
-  local first, last = full:match('^(.*)%s+(%S+)$')
-  if first then return first, last end
-  return nil, full
+
+  local latin, cjk = split_cjk(full)
+  if latin == '' then
+    return nil, (cjk ~= '' and cjk or full)
+  end
+
+  local first, last = latin:match('^(.*)%s+(%S+)$')
+  if not first then last = latin end
+  if cjk ~= '' then last = last .. ' ' .. cjk end
+  return first, last
 end
 
 local function author_macro(a)

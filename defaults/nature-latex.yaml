@@ -61,6 +61,17 @@ metadata:
   # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。
   # 关行号：lineno: false
 
+  # 中文字体。中文作者常写双语署名（Shuang Song 宋爽），\fnm/\sur 里就会带 CJK，
+  # 而 sn-jnl 不管字体、pdflatex 也排不了 CJK —— 含中文的稿子必须用 xelatex 编译
+  # （xelatex → bibtex → xelatex ×2）。
+  #
+  # 这一行对 pdflatex 是惰性的：模板里那段包在 \ifXeTeX 里，纯英文稿照旧可以
+  # pdflatex。所以设了它不会逼纯英文用户换编译器。
+  #
+  # 值只是首选 —— 模板会按 Noto Serif CJK SC / Source Han Serif SC / Songti SC /
+  # SimSun 依次回退，因为投稿包要在合作者和期刊的机器上也能编译，那里未必有这个字体。
+  CJKmainfont: Songti SC
+
   # For pandoc-crossref
   crossrefYaml: ${USERDATA}/defaults/crossref.yaml
   chapters: false
@@ -91,7 +102,8 @@ variables:
 #   ├── sn-nature.bst   当前样式对应的那一个
 #   └── figures/…       所有被引用的图，文件名已净化成纯 ASCII
 #
-# 编译：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+# 编译：xelatex → bibtex → xelatex ×2（BibTeX，不是 biber）。
+# 纯英文的稿子用 pdflatex 也可以；含中文就必须 xelatex。
 #
 # 与 paperbell.yaml（PDF 链）有意的差别：
 # - 没有 embed-resources —— 正好相反，图片要单独成文件

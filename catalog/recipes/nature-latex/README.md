@@ -26,11 +26,16 @@ submission.zip
 Unzip it and compile:
 
 ```bash
-pdflatex main && bibtex main && pdflatex main && pdflatex main
+xelatex main && bibtex main && xelatex main && xelatex main
 ```
 
 **BibTeX, not biber** — `sn-jnl.cls` loads `natbib` and issues its own
 `\bibliographystyle`, so the whole chain is classic BibTeX.
+
+**XeLaTeX, not pdfLaTeX, if the manuscript contains any CJK** — Chinese authors
+commonly sign bilingually (`Shuang Song 宋爽`), which puts CJK inside `\sur{}`, and
+pdfLaTeX cannot typeset it (`Unicode character 宋 not set up for use with LaTeX`).
+A manuscript with no CJK anywhere still compiles with `pdflatex`.
 
 The three things this saves you doing by hand: pulling the cited subset out of a
 thousand-entry `mybib.bib`, copying figures out of your Obsidian attachments folder and
@@ -45,6 +50,11 @@ For the same manuscript as a Word file, use `manuscript-obsidian`; for a typeset
 - Pandoc ≥ 3.0 (needs `pandoc.zip` and custom binary writers) and `pandoc-crossref`.
 - A LaTeX installation **only if you want to compile locally** — the export itself runs no
   TeX at all. The zip is self-contained: it ships the class and the `.bst`.
+- For a manuscript containing CJK: XeLaTeX, and a Chinese font. The template tries
+  `CJKmainfont` (default `Songti SC`), then falls back through `Noto Serif CJK SC`,
+  `Source Han Serif SC`, `Songti SC` and `SimSun`, because the zip has to compile on your
+  co-authors' and the journal's machines too, and a missing font is a hard XeLaTeX error.
+  Set `CJKmainfont:` in the note to prefer a different one.
 
 ## How to select it in the plugin
 
@@ -90,6 +100,12 @@ abstract: |
   Reservoir operation reshapes how meteorological drought propagates ...
 keywords: [drought propagation, reservoir operation, semi-arid hydrology]
 ```
+
+**Bilingual names.** `name: Shuang Song 宋爽` splits as `\fnm{Shuang} \sur{Song 宋爽}` —
+the CJK part rides with the surname rather than becoming it, because Springer Nature reads
+`\fnm`/`\sur` as given-name/surname metadata. A name that is entirely CJK (`宋爽`) is not
+split. Non-ASCII that is *not* CJK (`Jürgen Renn`) splits normally. Write `fnm:`/`sur:`
+explicitly if you want different behaviour.
 
 Author fields: `fnm`, `sur`, `spfx` (surname prefix, e.g. *van der*), `sfx` (e.g. *IV*),
 `email`, `corresponding`, `equalcont`, `affiliation` (or `affil`).

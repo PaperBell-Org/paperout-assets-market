@@ -27,6 +27,7 @@ $-- beamer / fontspec / xeCJK / svg / setspace 等分支原样留着 —— 它�
 $-- 而 defaults/nature-latex.yaml 一个都不设，因此是惰性的。删它们只会增加改坏模板的风险。
 $--
 $-- 编译链：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+$-- 稿件含 CJK 时走 xelatex → bibtex → xelatex ×2 —— 见下面的 CJKmainfont 块。
 $--============================================================================
 % Options for packages loaded elsewhere
 \PassOptionsToPackage{unicode$for(hyperrefoptions)$,$hyperrefoptions$$endfor$}{hyperref}
@@ -140,7 +141,20 @@ $endif$
 $if(CJKmainfont)$
   \ifXeTeX
     \usepackage{xeCJK}
-    \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}
+$-- 投稿包会在别人的机器上编译 —— 合作者、期刊的排版系统 —— 那里多半没有作者选
+$-- 的中文字体，而找不到字体是 xelatex 的硬错误。所以按 macOS / Windows / Linux
+$-- 常见的中文字体依次回退，全都没有时才用作者写的名字，好让报错指向真正的原因。
+$-- 这是本模板相对 pandoc 默认模板的第 7 处改动。
+    \IfFontExistsTF{$CJKmainfont$}{%
+      \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+    }{%
+      \IfFontExistsTF{Noto Serif CJK SC}{\setCJKmainfont{Noto Serif CJK SC}}{%
+      \IfFontExistsTF{Source Han Serif SC}{\setCJKmainfont{Source Han Serif SC}}{%
+      \IfFontExistsTF{Songti SC}{\setCJKmainfont{Songti SC}}{%
+      \IfFontExistsTF{SimSun}{\setCJKmainfont{SimSun}}{%
+        \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}%
+      }}}}%
+    }
 $if(CJKsansfont)$
     \setCJKsansfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKsansfont$}
 $endif$
