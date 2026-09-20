@@ -2,7 +2,7 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
-## Unreleased
+## 1.0.11 — 2026-09-20
 
 **`nature-latex` handles bilingual Chinese author names, and compiles with XeLaTeX.**
 Found by exporting a real manuscript: `\sur{宋爽}` made pdfLaTeX fail with
