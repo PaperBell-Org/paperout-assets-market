@@ -19,6 +19,7 @@ this before opening a PR.
 | You want to add… | Put the file in… | Also required |
 | --- | --- | --- |
 | A Lua filter | `filters/<name>.lua` | must pass the security scan (below) |
+| A custom Pandoc **writer** | `writers/<name>.lua` | same security scan; goes in a recipe's `to:`, never in `filters:` |
 | A LaTeX/Word template | `templates/<name>.{tex,latex,sty,docx}` | register `.sty`/`.tex` siblings as the recipe's `extraFiles` |
 | A citation style | add an id to `catalog/csl-styles.yaml` (resolved from the official CSL repo) | only vendor a file in `csl/` if it needs to be bundled offline (`offline: true`) |
 | A **complete recipe** (a full export preset) | `defaults/<id>.yaml` **and** `catalog/recipes/<id>/…` | sample + golden (below) |

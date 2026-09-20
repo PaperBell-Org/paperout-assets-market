@@ -54,8 +54,10 @@ Pick **Nature-LaTeX (submission sources)** in the export menu. The output is
 ## Frontmatter the title block reads
 
 The same keys as `manuscript-obsidian`, so one note exports to Word and to submission
-sources without edits. Springer Nature's structured fields are also accepted, and win when
-both are present.
+sources without edits. Springer Nature's structured fields are also accepted; `name:` wins
+when both spellings are present. The full schema, shared by every manuscript route, is in
+**[catalog/manuscript-frontmatter.md](../../manuscript-frontmatter.md)** — this section is
+just the Nature-LaTeX view of it.
 
 ```yaml
 title: Reservoir storage buffers drought propagation in a semi-arid basin
@@ -92,7 +94,8 @@ keywords: [drought propagation, reservoir operation, semi-arid hydrology]
 Author fields: `fnm`, `sur`, `spfx` (surname prefix, e.g. *van der*), `sfx` (e.g. *IV*),
 `email`, `corresponding`, `equalcont`, `affiliation` (or `affil`).
 Affiliation fields: `orgdiv`, `orgname`, `street`, `city`, `postcode`, `state`, `country`,
-plus `index` for the superscript number.
+plus `index` for the superscript number. Every one of these is also understood by the Word
+route, so writing them costs you nothing there.
 
 ## Options
 

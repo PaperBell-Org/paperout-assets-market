@@ -35,7 +35,7 @@ describe('parseDefaults', () => {
     const p = parseDefaults(read('nature-latex.yaml'));
     // Miss this and the writer is neither bundled nor installed — the recipe
     // arrives broken even though every other dependency resolved.
-    expect(p.requires).toContain('filters/latex-submission.lua');
+    expect(p.requires).toContain('writers/latex-submission.lua');
     expect(p.requires).toContain('templates/nature-latex.latex');
     expect(p.systemDeps).not.toContain('nature-latex.yaml');
   });

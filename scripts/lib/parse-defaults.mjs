@@ -49,7 +49,7 @@ function refToRequire(ref, requires, rawRefs) {
   if (typeof ref !== 'string' || !ref.trim()) return;
   rawRefs.push(ref);
   const rel = stripVar(ref);
-  if (/^(filters|templates|defaults|csl)\//.test(rel)) requires.add(rel);
+  if (/^(filters|writers|templates|defaults|csl)\//.test(rel)) requires.add(rel);
 }
 
 /** Recursively check whether a key resolves to a non-null value anywhere top-level or under metadata. */

@@ -17,11 +17,24 @@ source away.
   Entries are written with a fixed 1980-01-01 timestamp, so the zip is byte-reproducible
   and can carry a golden fingerprint.
 
-- **New `filters/latex-submission.lua`** (1.0.0) — a custom **writer**, not a filter. It
-  goes in the defaults' `to:` key and must never appear in `filters:`; the file header says
-  so at length, because putting it in `filters:` fails silently. It lives under `filters/`
-  only because `build-index.mjs` scans just `filters/*.lua`, `templates/*.{tex,latex,sty,docx}`
-  and `csl/*.csl` — a `.lua` anywhere else never becomes a downloadable asset.
+- **New `writers/` asset directory**, and `writers/latex-submission.lua` (1.0.0) in it — a
+  custom **writer**, not a filter. It goes in the defaults' `to:` key and must never appear
+  in `filters:`; the file header says so at length, because putting it in `filters:` fails
+  silently. `index.json` gives it `type: "writer"`, and `build-index`, `pack-bundle`,
+  `parse-defaults`, `scan-security` and the CI luacheck step all learned the directory —
+  a writer executes on the user's machine exactly like a filter, and `includeAll` would
+  otherwise have dropped it from the `full` bundle without a word.
+
+- **Every manuscript route now reads one frontmatter schema**, written down in
+  `catalog/manuscript-frontmatter.md`. `nature-latex` was added reading Springer Nature's
+  `fnm:`/`sur:` and `orgdiv:`/`orgname:` fields, which `filters/manuscript-docx.lua`
+  (→ 1.2.0) did not know: the same note produced a full author block in the LaTeX zip and
+  a **missing** one in Word, with a bare affiliation number left behind — a half-broken
+  export nothing would have caught. The Word filter now reads both spellings (`name:`
+  wins) and joins a structured affiliation into one comma-separated line in a fixed field
+  order. `manuscript-obsidian`'s sample gained a structured author and a structured
+  affiliation so a route that drops one spelling can no longer pass CI; its golden moves
+  for that reason.
 
 - **Only the cited references.** `pandoc.utils.references()` already returns exactly the
   cited plus `nocite` entries, so no key filtering is needed. The bibliography is written

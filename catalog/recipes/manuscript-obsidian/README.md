@@ -83,6 +83,8 @@ abstract: |                    # single-line string or block scalar, both suppor
 keywords: [one, two, three]
 ```
 
+Springer Nature's structured fields are read too — `fnm:`/`spfx:`/`sur:`/`sfx:` on an author, `orgdiv:`/`orgname:`/`street:`/`city:`/`postcode:`/`state:`/`country:` on an affiliation — so the same note also exports through `nature-latex`. `name:` wins when both spellings are present; a structured affiliation is joined into one comma-separated line. The full schema, shared by every manuscript route, is in **[catalog/manuscript-frontmatter.md](../../manuscript-frontmatter.md)**.
+
 Looser shapes work too, so a note written for plain pandoc still gets a title block: `author: Your Name` (or `author: [A, B]`) is used when there is no `authors:`; `authors: [A, B]` and `affiliations: [Dept A, Dept B]` may be plain strings; `keywords: one two` may be a scalar. Anything absent is simply omitted. `date:` is not rendered — a submission title block does not carry one. `bibliography` and `csl` are injected by the plugin at run time — do not set them in the note or in the defaults file.
 
 ## Options

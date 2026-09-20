@@ -46,7 +46,7 @@ function recipeClosure(id, manifests) {
 function bundleClosure(def, manifests) {
   const files = new Set();
   if (def.includeAll) {
-    for (const dir of ['defaults', 'filters', 'templates', 'csl']) {
+    for (const dir of ['defaults', 'filters', 'writers', 'templates', 'csl']) {
       if (exists(dir)) for (const f of walk(dir)) files.add(f);
     }
     if (exists('preamble.sty')) files.add('preamble.sty');

@@ -6,8 +6,8 @@ output-file: submission.zip
 
 # 自定义 writer（不是 filter）。它把渲染好的 main.tex、只含被引条目的 references.bib、
 # sn-jnl.cls、当前样式的 .bst 和所有图片打成一个 zip。
-# 详见 filters/latex-submission.lua 的文件头。
-to: ${USERDATA}/filters/latex-submission.lua
+# 详见 writers/latex-submission.lua 的文件头。
+to: ${USERDATA}/writers/latex-submission.lua
 
 data-dir: ${.}/..                             #! 当前 defaults 文件夹的上一级，即 pandoc 目录
 
@@ -55,7 +55,7 @@ metadata:
   # （pandoc 里 -M / defaults metadata 的优先级高于文档 YAML），写在这儿就等于
   # 把参考文献样式焊死、笔记再也换不了刊。默认值放在 writer 的 DEFAULT_REFSTYLE
   # 常量里（sn-nature），笔记写 sn-refstyle: sn-basic 即可覆盖。可选值见
-  # filters/latex-submission.lua 的 REFSTYLE_BST 表。
+  # writers/latex-submission.lua 的 REFSTYLE_BST 表。
 
   # 整个接管 documentclass 选项（笔记里写 sn-options: [pdflatex, sn-basic, twocolumn]）。
   # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。

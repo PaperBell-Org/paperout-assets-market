@@ -108,6 +108,10 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
 
   // leaf assets
   for (const rel of listFiles('filters', { exts: ['.lua'] })) add(leafAsset(rel, 'filter', tag, docs));
+  // Custom Pandoc writers (a defaults file's `to:`). Their own type, not 'filter':
+  // index.json is what the plugin renders, and calling a writer a filter there invites
+  // exactly the mistake the writer's own header warns about.
+  for (const rel of listFiles('writers', { exts: ['.lua'] })) add(leafAsset(rel, 'writer', tag, docs));
   for (const rel of listFiles('csl', { exts: ['.csl'] })) add(leafAsset(rel, 'csl', tag, docs));
   for (const rel of listFiles('templates', { exts: ['.tex', '.latex', '.sty', '.docx'] })) add(leafAsset(rel, 'template', tag, docs));
 

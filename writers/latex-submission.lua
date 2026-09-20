@@ -5,18 +5,11 @@
   !! 把它当 filter 加载，找不到 Pandoc/Meta/Block 处理函数，于是静默地什么都不做。
   !! 它的位置是 defaults 的 `to:` 键：
   !!
-  !!     to: ${USERDATA}/filters/latex-submission.lua
+  !!     to: ${USERDATA}/writers/latex-submission.lua
   !!
-  !! 为什么住在 filters/ 而不是新建 writers/：build-index.mjs 给这个目录里的东西打的
-  !! type 是 "filter"，所以 index.json 里本文件的类型其实是错的 —— 这是已知的、有意的
-  !! 取舍。教工具链认识 writers/ 只是六处单行改动（build-index、pack-bundle、
-  !! parse-defaults、scan-security、validate.yml、CONTRIBUTING），真正的阻碍在仓库外：
-  !! index.json 是 schemaVersion: 1，新增一个 type: "writer" 会直接送到闭源插件面前，
-  !! 而插件是否对未知 type 宽容、无从在本仓库验证。等确认插件能容忍（或 schema 升版）
-  !! 再搬，搬的时候记得 pack-bundle 的 includeAll 目录列表也要加，否则 full 包会静默
-  !! 漏掉本文件。
-  !!
-  !! 附带好处：待在 filters/ 能顺带吃到 luacheck 和 scan-security 两道检查。
+  !! 本文件住在 writers/ —— 和 filters/ 平级的第五个资产目录，build-index.mjs 给它
+  !! 打的 type 是 "writer"。scan-security 和 luacheck 同样覆盖这个目录：writer 和
+  !! filter 一样在用户机器上执行。
 
   产出：一个 zip（`output-file: submission.zip`），布局
 

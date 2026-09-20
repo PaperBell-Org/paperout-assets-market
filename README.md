@@ -23,12 +23,13 @@ Two cleanly separated trees.
 ```
 defaults/    Pandoc defaults *.yaml (one per recipe + shared includes)
 filters/     Lua filters (*.lua)
+writers/     Custom Pandoc Lua writers (*.lua) — a recipe's `to:`
 templates/   LaTeX / Word templates (*.tex, *.latex, *.sty, *.docx)
 csl/         Citation styles (*.csl)
 preamble.sty shared LaTeX preamble
 ```
 
-These four dirs are byte-for-byte what a user gets in their vault under
+These five dirs are byte-for-byte what a user gets in their vault under
 `PaperBell/pandoc/`. Every `defaults/*.yaml` references its resources via
 `${USERDATA}/...` and sets `data-dir: ${.}/..`, so the toolchain self-locates
 wherever it is downloaded (see the invariants in [CONTRIBUTING.md](CONTRIBUTING.md)).

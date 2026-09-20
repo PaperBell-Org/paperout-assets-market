@@ -93,15 +93,53 @@ local function corresponding_address(val)
   return s:find("@", 1, true) and s or nil
 end
 
+--- Springer Nature 的结构化机构字段，按这个顺序逗号拼成一行。
+--- Word 没有 \orgdiv/\orgaddress 这种结构，只能拼成一个字符串；顺序固定在这里，
+--- 免得同一份笔记导 Word 和导投稿源文件时机构的写法对不上。
+local ORG_FIELDS = { "orgdiv", "orgname", "street", "city", "postcode", "state", "country" }
+
+--- 姓名：`name:` 优先（本系列 recipe 的原生写法），没有才从 SN 的结构化字段拼。
+--- 两套都支持是有意的 —— 同一份笔记要能同时导 Word 和 Nature-LaTeX 投稿包，
+--- 而 SN 的宏需要 \fnm{}/\sur{} 拆开的姓名。详见 catalog/manuscript-frontmatter.md。
+local function author_name_inlines(a)
+  if a.name then return as_inlines(a.name) end
+
+  local parts = pandoc.List()
+  for _, key in ipairs({ "fnm", "spfx", "sur", "sfx" }) do
+    if a[key] then
+      if #parts > 0 then parts:insert(pandoc.Space()) end
+      parts:extend(as_inlines(a[key]))
+    end
+  end
+  return parts
+end
+
+--- 机构名：同样 `name:` 优先，没有才按 ORG_FIELDS 拼。
+local function org_name_inlines(aff)
+  if aff.name then return as_inlines(aff.name) end
+
+  local parts = pandoc.List()
+  for _, key in ipairs(ORG_FIELDS) do
+    if aff[key] then
+      if #parts > 0 then
+        parts:insert(pandoc.Str(","))
+        parts:insert(pandoc.Space())
+      end
+      parts:extend(as_inlines(aff[key]))
+    end
+  end
+  return parts
+end
+
 --- 一位作者 → Inlines。map 形式排「姓名 + 机构上标 + 通讯星号」，纯名字就只排名字。
 local function author_inlines(a)
   if not is_map(a) then return as_inlines(a) end
 
-  local line = pandoc.List()
-  if a.name then line:extend(as_inlines(a.name)) end
+  local line = author_name_inlines(a)
   if #line == 0 then return line end          -- 没名字就整条跳过，别只留分隔符
 
-  local aff = affiliation_label(a.affiliation)
+  -- `affiliation:` 是本 recipe 的原生键，`affil:` 是 SN 模板的叫法，两个都认
+  local aff = affiliation_label(a.affiliation ~= nil and a.affiliation or a.affil)
   if aff then line:insert(pandoc.Superscript(pandoc.Str(aff))) end
   if a.corresponding then line:insert(pandoc.Superscript(pandoc.Str("*"))) end
   return line
@@ -116,7 +154,7 @@ local function affiliation_inlines(aff)
     line:insert(pandoc.Superscript(pandoc.Str(pandoc.utils.stringify(aff.index))))
     line:insert(pandoc.Space())
   end
-  if aff.name then line:extend(as_inlines(aff.name)) end
+  line:extend(org_name_inlines(aff))
   if #line == 1 then return pandoc.List({}) end  -- 只有编号、没有名称 = 空条目
   return line
 end

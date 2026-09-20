@@ -174,7 +174,7 @@ filters/link.lua:
       trailing block IDs.
     zh: 把 Obsidian 维基链接和外链转成 LaTeX 链接（\href/\hyperref），支持文件/章节/块引用，并去掉行尾块 ID。
 filters/manuscript-docx.lua:
-  version: 1.1.0
+  version: 1.2.0
   title:
     en: docx title page
     zh: docx 标题页
@@ -519,7 +519,7 @@ defaults/crossref.yaml:
     en: Shared pandoc-crossref config include, setting the figure prefix to
       Figure/Figures and equation numbering to the ($i$) template.
     zh: 共享的 pandoc-crossref 配置片段，把图前缀设为 Figure/Figures，公式编号用 ($i$) 模板。
-filters/latex-submission.lua:
+writers/latex-submission.lua:
   version: 1.0.0
   title:
     en: Submission zip writer
