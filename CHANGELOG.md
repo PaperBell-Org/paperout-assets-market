@@ -2,6 +2,25 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**Float sections now land after the reference list, in Springer Nature's required order.**
+Reported from a real export: the bibliography came out split in half.
+
+`figures-at-end.lua` collects floats at the end of the *body*, which is still before
+`\bibliography{}`. Two things went wrong with that, both reproduced on the sample:
+
+- the emitted order was Figures → Tables → References, where SN wants
+  `… References · Acknowledgements … → Tables → Figure Legends/Captions`;
+- figures are LaTeX floats, so they drifted into the reference list — Figure 2 landed
+  between `[1]` and `[2]`, with Figure 3 after the bibliography entirely.
+
+`writers/latex-submission.lua` (→ 1.3.0) now lifts both sections into `include-after`,
+which the template emits after `\bibliography{}`, swaps them into Tables-then-Figures
+order, and pins each figure with `[H]` so it cannot drift back. `templates/nature-latex.latex`
+(→ 1.2.0) loads `float` for that. Tables are `longtable`, not floats, so they never needed
+pinning. `figures-at-end: false` still leaves everything in place in the text.
+
 ## 1.1.0 — 2026-09-20
 
 **`nature-latex` now defaults to the typeset form** — single-spaced, no line numbers,

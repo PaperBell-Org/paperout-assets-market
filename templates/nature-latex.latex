@@ -289,6 +289,8 @@ $-- tables
 $--
 $if(tables)$
 \usepackage{longtable,booktabs,array}
+$-- float 提供 [H]：图表后置区要钉住位置，不能再漂回参考文献里（见 writer 的 relocate_floats）
+\usepackage{float}
 \newcounter{none} % pandoc >=3.9 wraps uncaptioned tables in \LTcaptype{none}; custom templates must define it (No counter 'none' defined)
 $if(multirow)$
 \usepackage{multirow}

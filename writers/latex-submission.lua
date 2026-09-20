@@ -150,6 +150,13 @@ local function refstyle_in(options)
   return nil
 end
 
+-- frontmatter 的布尔值归一，和 filters/lineno_default.lua 的规则一致。
+local function truthy(v)
+  if v == nil then return false end
+  local str = pandoc.utils.stringify(v):lower():gsub('%s+', '')
+  return not (str == 'false' or str == 'no' or str == '0' or str == 'off' or str == '')
+end
+
 local function class_options(meta)
   local explicit = meta['sn-options']
 
@@ -157,12 +164,7 @@ local function class_options(meta)
     -- 默认：出版形态 —— 单倍行距、无行号，配 filters/nature-latex-layout.lua 的
     -- 图表后置，就是期刊排出来的样子。送审要的双倍行距 + 行号是两个独立开关，
     -- 笔记里写 referee: true / lineno: true 各自打开，或者用 sn-options 整体接管。
-    local function opt(key)
-      if meta[key] == nil then return false end
-      local str = pandoc.utils.stringify(meta[key]):lower():gsub('%s+', '')
-      return not (str == 'false' or str == 'no' or str == '0' or str == 'off' or str == '')
-    end
-    local referee, lineno = opt('referee'), opt('lineno')
+    local referee, lineno = truthy(meta.referee), truthy(meta.lineno)
 
     local refstyle = DEFAULT_REFSTYLE
     if meta['sn-refstyle'] ~= nil then
@@ -394,6 +396,61 @@ local function collect_figures(doc)
   }
 
   return doc, files
+end
+
+-- ------------------------------------------- 3.6 图表后置到参考文献之后
+
+--[[
+  figures-at-end.lua 把图和表搬到了正文末尾 —— 但那仍然在 \bibliography{} 之前，
+  而 Springer Nature 要求的章节顺序是：
+
+      … Methods → Data Availability → References → Acknowledgements …
+      → Tables → Figure Legends/Captions
+
+  也就是图表在**整篇最后**，参考文献之前不能有。照搬到正文末尾会出两个问题，
+  实测都会发生：
+
+    1. 顺序反了 —— 生成的是 Figures → Tables → References。
+    2. figure 是浮动体，会漂进参考文献列表里。实测样例中 Figure 2 正好插在
+       [1] 和 [2] 之间，把文献表劈成两段，Figure 3 还落到了文献后面。
+
+  所以这里把那两节整体挪进 include-after（模板里它排在 \bibliography{} 之后），
+  顺时调换成 Tables → Figures，并给 figure 加 [H] 钉住位置。表格是 longtable，
+  本来就不是浮动体，不需要钉。
+--]]
+local function relocate_floats(doc)
+  local fi, ti
+  for i, blk in ipairs(doc.blocks) do
+    if blk.t == 'Header' then
+      local txt = pandoc.utils.stringify(blk)
+      if txt == 'Figures' and not fi then fi = i end
+      if txt == 'Tables' and not ti then ti = i end
+    end
+  end
+  if not (fi or ti) then return doc, nil end
+
+  -- figures-at-end.lua 产出的顺序固定是 Figures 段在前、Tables 段在后
+  local cut = math.min(fi or math.huge, ti or math.huge)
+  local figs, tbls = pandoc.List(), pandoc.List()
+  for i = cut, #doc.blocks do
+    local blk = doc.blocks[i]
+    if ti and i >= ti then tbls:insert(blk) else figs:insert(blk) end
+  end
+
+  local body = pandoc.List()
+  for i = 1, cut - 1 do body:insert(doc.blocks[i]) end
+  doc.blocks = body
+
+  local out = {}
+  for _, section in ipairs({ tbls, figs }) do      -- SN 的顺序：先表后图
+    if #section > 0 then
+      local tex = pandoc.write(pandoc.Pandoc(section), 'latex')
+      tex = tex:gsub('\\begin{figure}\n', '\\begin{figure}[H]\n')
+      out[#out + 1] = '\\clearpage\n' .. tex
+    end
+  end
+  if #out == 0 then return doc, nil end
+  return doc, table.concat(out, '\n')
 end
 
 -- --------------------------------------------------------- 4. 抬头（title block）
@@ -661,6 +718,12 @@ function ByteStringWriter(doc, opts)
 
   -- 4 ──────────────────────────────────────────────────────── main.tex
   doc.meta['sn-options'] = pandoc.MetaString(table.concat(options, ','))
+
+  local floats
+  doc, floats = relocate_floats(doc)
+  if floats then
+    doc.meta['include-after'] = pandoc.MetaBlocks { pandoc.RawBlock('latex', floats) }
+  end
 
   -- 只有文档真含 CJK 时才声明中文字体，而且不覆盖笔记自己写的。
   --
