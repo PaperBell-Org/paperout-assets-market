@@ -2,7 +2,7 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
-## Unreleased
+## 1.1.1 — 2026-09-20
 
 **Float sections now land after the reference list, in Springer Nature's required order.**
 Reported from a real export: the bibliography came out split in half.
