@@ -1,0 +1,6 @@
+id: nature-latex
+version: 1.0.0
+title: "Nature-LaTeX (submission sources) — bundle"
+description: "Everything needed for the nature-latex recipe in one download, including the Springer Nature document class and all nine reference styles."
+include:
+  recipes: [nature-latex]

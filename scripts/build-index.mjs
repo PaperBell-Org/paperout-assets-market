@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Scan the four consumption dirs + catalog, validate the invariants, and emit
+// Scan the consumption dirs + catalog, validate the invariants, and emit
 // index.json (the manifest the plugin and frontend consume).
 //
 //   node scripts/build-index.mjs --tag 1.0.0 [--out dist/index.json] [--strict] [--check]
@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkDefaults } from './lib/invariants.mjs';
-import { parseDefaultsFile } from './lib/parse-defaults.mjs';
+import { parseDefaultsFile, KNOWN_SYSTEM_DEPS } from './lib/parse-defaults.mjs';
 import { sha256File } from './lib/hash.mjs';
 import { isSemver } from './lib/version.mjs';
 import { loadRecipeManifests, loadAssetDocs, loadCslStyles, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
@@ -76,6 +76,26 @@ function leafAsset(rel, type, tag, docs) {
   };
 }
 
+// System dependencies are normally DERIVED from the defaults yaml: a bare filter token
+// like `pandoc-crossref` means "the user must install this binary", and the plugin
+// prompts for it. A recipe that invokes such a binary indirectly — e.g. through a Lua
+// shim calling pandoc.utils.run_json_filter — has no bare token to derive from, so its
+// recipe.yaml declares the dependency explicitly and we merge the two. Only names the
+// toolchain actually knows are accepted, so a typo fails the build instead of silently
+// producing a prompt for a binary that does not exist.
+function systemDeps(id, parsed, manifest, errors) {
+  const merged = [...new Set([...parsed.systemDeps, ...(manifest?.systemDeps ?? [])])];
+  const known = merged.filter((dep) => KNOWN_SYSTEM_DEPS.has(dep));
+  for (const dep of merged) {
+    if (!KNOWN_SYSTEM_DEPS.has(dep)) {
+      // Checked for BOTH sources. A typo in a bare `filters:` token used to sail
+      // through and ship the plugin a prompt to install a binary that does not exist.
+      errors.push(`recipe ${id}: unknown system dependency "${dep}" (known: ${[...KNOWN_SYSTEM_DEPS].join(', ')})`);
+    }
+  }
+  return known;
+}
+
 export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
   const errors = [];
   const warnings = [];
@@ -91,6 +111,10 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
 
   // leaf assets
   for (const rel of listFiles('filters', { exts: ['.lua'] })) add(leafAsset(rel, 'filter', tag, docs));
+  // Custom Pandoc writers (a defaults file's `to:`). Their own type, not 'filter':
+  // index.json is what the plugin renders, and calling a writer a filter there invites
+  // exactly the mistake the writer's own header warns about.
+  for (const rel of listFiles('writers', { exts: ['.lua'] })) add(leafAsset(rel, 'writer', tag, docs));
   for (const rel of listFiles('csl', { exts: ['.csl'] })) add(leafAsset(rel, 'csl', tag, docs));
   for (const rel of listFiles('templates', { exts: ['.tex', '.latex', '.sty', '.docx'] })) add(leafAsset(rel, 'template', tag, docs));
 
@@ -143,7 +167,7 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
       url: rawUrl(rel, tag),
       sha256: sha256File(abs(rel)),
       requires,
-      systemDeps: parsed.systemDeps,
+      systemDeps: systemDeps(id, parsed, manifest, errors),
       extraFiles,
       tier: manifest?.tier ?? 'core',
       reviewed: manifest?.tier === 'community' ? Boolean(manifest?.reviewed) : true,

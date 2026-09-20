@@ -7,6 +7,7 @@
 //   - filters: [ ${USERDATA}/filters/<x>.lua, ${.}/../filters/<x>.lua, citeproc, ... ]
 //   - metadata.crossrefYaml: ${USERDATA}/defaults/crossref.yaml
 //   - csl: (must be commented out; if active, it is a dependency)
+//   - to:              ${USERDATA}/writers/<x>.lua        (custom Lua writers)
 //
 // Two portable prefixes appear in the wild and both are valid (no machine paths):
 //   ${USERDATA}/foo   and   ${.}/../foo   → repo-relative `foo`.
@@ -14,6 +15,7 @@
 
 import fs from 'node:fs';
 import YAML from 'yaml';
+import { CONSUMPTION_DIRS } from './catalog.mjs';
 
 export const KNOWN_SYSTEM_DEPS = new Set(['citeproc', 'pandoc-crossref']);
 
@@ -26,6 +28,19 @@ export function isPortableRef(ref) {
   return s.startsWith('${USERDATA}/') || s.startsWith('${.}/');
 }
 
+/**
+ * True if a value looks like a resource path rather than a bare name.
+ *
+ * Deliberately looser than isPortableRef(): a machine-absolute `to:` or filter entry
+ * must still reach rawRefs so `checkDefaults` can reject it (invariant #2). Gate on
+ * portability here and a non-portable reference is silently ignored instead of failing
+ * the build — exactly the bug that invariant exists to catch.
+ */
+function looksLikePath(value) {
+  const s = String(value).trim();
+  return s.includes('/') || s.includes('$');
+}
+
 /** Strip a portable prefix, returning the repo-relative path (or the input trimmed). */
 export function stripVar(ref) {
   return String(ref).trim().replace(USERDATA_PREFIX, '').replace(DOTDOT_PREFIX, '');
@@ -35,7 +50,7 @@ function refToRequire(ref, requires, rawRefs) {
   if (typeof ref !== 'string' || !ref.trim()) return;
   rawRefs.push(ref);
   const rel = stripVar(ref);
-  if (/^(filters|templates|defaults|csl)\//.test(rel)) requires.add(rel);
+  if (new RegExp(`^(${CONSUMPTION_DIRS.join('|')})/`).test(rel)) requires.add(rel);
 }
 
 /** Recursively check whether a key resolves to a non-null value anywhere top-level or under metadata. */
@@ -61,6 +76,14 @@ export function parseDefaults(yamlText) {
   refToRequire(doc.template, requires, rawRefs);
   refToRequire(doc['reference-doc'], requires, rawRefs);
 
+  // `to:` is normally a format name (docx, latex, beamer) — but Pandoc 3 also accepts
+  // a path to a custom Lua writer, and that writer is as load-bearing as the template:
+  // miss it here and the file is neither packed into the bundle nor installed by the
+  // plugin, so the recipe arrives broken. Only treat it as a path when it looks like
+  // one; a bare format name stays a format name (it is NOT a system dep).
+  const to = typeof doc.to === 'string' ? doc.to.trim() : '';
+  if (to && looksLikePath(to)) refToRequire(to, requires, rawRefs);
+
   // filters list: portable refs → files; bare tokens → system deps
   const filters = Array.isArray(doc.filters) ? doc.filters : [];
   for (const item of filters) {
@@ -70,7 +93,7 @@ export function parseDefaults(yamlText) {
     if (!s) continue;
     if (isPortableRef(s)) {
       refToRequire(s, requires, rawRefs);
-    } else if (!s.includes('/') && !s.includes('$')) {
+    } else if (!looksLikePath(s)) {
       systemDeps.add(s); // citeproc, pandoc-crossref, ...
     }
   }

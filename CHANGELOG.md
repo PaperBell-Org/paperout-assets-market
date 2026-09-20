@@ -2,6 +2,97 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+New recipe **`nature-latex`** (Nature-LaTeX): a manuscript exports to a Springer Nature
+LaTeX *submission package* — a zip holding `main.tex` on the official `sn-jnl` class, a
+`references.bib` containing only the entries the manuscript actually cites, each figure as
+its own file, the class, and the `.bst` for the selected reference style. It closes the
+gap left by the existing routes, which produce a PDF or a Word file and throw the LaTeX
+source away.
+
+- **Pure assets, no plugin change.** The whole package is produced by a single Pandoc
+  invocation. Pandoc 3's custom writers can return binary output (`ByteStringWriter`) and
+  `pandoc.zip` builds the archive — the same module `filters/xlsx_table.lua` already uses.
+  Entries are written with a fixed 1980-01-01 timestamp, so the zip is byte-reproducible
+  and can carry a golden fingerprint.
+
+- **New `writers/` asset directory**, and `writers/latex-submission.lua` (1.0.0) in it — a
+  custom **writer**, not a filter. It goes in the defaults' `to:` key and must never appear
+  in `filters:`; the file header says so at length, because putting it in `filters:` fails
+  silently. `index.json` gives it `type: "writer"`, and `build-index`, `pack-bundle`,
+  `parse-defaults`, `scan-security` and the CI luacheck step all learned the directory —
+  a writer executes on the user's machine exactly like a filter, and `includeAll` would
+  otherwise have dropped it from the `full` bundle without a word.
+
+- **Every manuscript route now reads one frontmatter schema**, written down in
+  `catalog/manuscript-frontmatter.md`. `nature-latex` was added reading Springer Nature's
+  `fnm:`/`sur:` and `orgdiv:`/`orgname:` fields, which `filters/manuscript-docx.lua`
+  (→ 1.2.0) did not know: the same note produced a full author block in the LaTeX zip and
+  a **missing** one in Word, with a bare affiliation number left behind — a half-broken
+  export nothing would have caught. The Word filter now reads both spellings (`name:`
+  wins) and joins a structured affiliation into one comma-separated line in a fixed field
+  order. `manuscript-obsidian`'s sample gained a structured author and a structured
+  affiliation so a route that drops one spelling can no longer pass CI; its golden moves
+  for that reason.
+
+- **Only the cited references.** `pandoc.utils.references()` already returns exactly the
+  cited plus `nocite` entries, so no key filtering is needed. The bibliography is written
+  through Pandoc's **biblatex** writer and then has `date = {2021-05-14}` rewritten to
+  `year = {2021}`: the BibTeX writer would have been the obvious choice but it drops `doi`,
+  and `sn-nature.bst` uses it. Citation keys that resolve to nothing are reported on
+  stderr — in a BibTeX chain a bad key does not render as `[?]`, it silently vanishes.
+
+- **New `filters/crossref-latex.lua`** (1.0.0), and cross-references stay live because of
+  it. `pandoc-crossref` decides how to behave from the target format Pandoc passes it as
+  `argv[1]`, which for a custom writer is the writer's *path* — so it never recognises
+  LaTeX and degrades: it bakes `Figure 1: ` into captions (which `\caption` then repeats),
+  freezes `[@fig:x]` into the literal text `Figure 1`, and fakes equation numbers with
+  `\qquad{(1)}` while putting `\label` outside the equation, where `\ref` picks up the
+  wrong counter. No metadata key overrides this (`-M format`, `crossrefFormat` and
+  `outputFormat` were all tested). The shim runs crossref through
+  `pandoc.utils.run_json_filter(doc, 'pandoc-crossref', {'latex'})`, pinning that argument,
+  and crossref then emits correct `\caption{}`, `\ref{}` and `equation` environments
+  natively. Use it in place of the bare `pandoc-crossref` token on any chain whose `to:`
+  is a Lua writer.
+
+- **`scripts/build-index.mjs` learns an explicit `systemDeps` in `recipe.yaml`.** System
+  dependencies are normally derived from a bare filter token, which is what tells the
+  plugin to prompt for the `pandoc-crossref` install. Invoking it through the shim removes
+  that token, so the prompt would have silently disappeared; the recipe now declares the
+  dependency and the two sets are merged. Unknown names fail the build rather than
+  producing a prompt for a binary that does not exist.
+
+- **New `templates/nature-latex.latex`** (1.0.0), derived from Pandoc's default LaTeX
+  template with all six partials **inlined**. Inlining is not tidiness: partials resolve
+  against the data-dir's `templates/` first, and this repo already ships a
+  `templates/fonts.latex` that predates Pandoc splitting out `font-settings.latex` — left
+  as partial calls, the font setup would be loaded twice. Six changes from the default, each
+  annotated in place; the important ones are that `natbib` and `\bibliographystyle` are
+  removed (`sn-jnl.cls` loads and sets them itself, so a second load is an option clash)
+  and the title block is replaced with SN's `\author*`/`\affil*`/`\abstract`/`\keywords`.
+
+- **Vendored `templates/nature/`** — `sn-jnl.cls` plus all nine `.bst` files, LPPL 1.3c,
+  redistributed unmodified (see NOTICE). `.gitattributes` marks them `-text`: upstream ships
+  CR-only line endings and non-UTF-8 bytes, and normalizing them corrupts the class. Each
+  export packs only the class and the one `.bst` in use. The option-to-style mapping is a
+  lookup table, not string concatenation — `sn-apa` asks for `sn-apacite`, and `sn-aps` asks
+  for `sn-APS` while the shipped file is `sn-aps.bst`, so the export writes it into the zip
+  under the name the class asks for.
+
+- **`scripts/lib/parse-defaults.mjs`** now derives a requirement from `to:` when it looks
+  like a path. Without it the writer named in `to:` is in no recipe's `requires`, so
+  `pack-bundle` leaves it out of the bundle and the plugin never installs it — the recipe
+  would arrive broken with every other dependency resolved. A bare `to: docx` is still just
+  a format name.
+
+- **`scripts/build-recipe.mjs`** gains a zip branch. It used to route anything that was not
+  `docx` through a fresh `-t latex` run, which for this recipe bypasses the writer entirely
+  and would have left the zip layout, figure packaging, bibliography extraction and `.bst`
+  selection completely untested. The new branch runs the real export and fingerprints the
+  sorted entry list plus a hash of each entry's content — entry content, not zip bytes, for
+  the reason `scripts/lib/docx.mjs` already documents about deflate.
+
 ## 1.0.9 — 2026-09-08
 
 The Word response letter (`response-letter-docx`) now tells the reviewer's words, the

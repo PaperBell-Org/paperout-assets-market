@@ -1,0 +1,32 @@
+id: nature-latex
+version: 1.0.0
+title:
+  en: Nature-LaTeX (submission sources)
+  zh: Nature-LaTeX（投稿源文件）
+description:
+  en: "Manuscript to a Springer Nature LaTeX submission package (.zip): a single
+    main.tex on the official sn-jnl document class, a references.bib holding only
+    the entries this manuscript actually cites, every figure as its own file, and
+    the class plus the reference style it needs. Double-spaced and line-numbered
+    for review by default; compiles with pdflatex + bibtex."
+  zh: 手稿导出 Springer Nature 的 LaTeX 投稿源文件包（.zip）：单文件 main.tex
+    （官方 sn-jnl 文档类）、只含本文引用条目的 references.bib、逐张独立的图片文件，
+    外加所配的文档类与参考文献样式。默认双倍行距加行号的送审形态，用
+    pdflatex + bibtex 编译。
+tier: core
+# pandoc-crossref 是通过 filters/crossref-latex.lua 的 run_json_filter 间接调用的
+# （见那个文件的头注释：直接写 `pandoc-crossref` 会让它认不出输出格式）。yaml 里
+# 没有裸 token 可供推导，所以在这里显式声明，插件才会提示用户安装它。
+systemDeps:
+  - pandoc-crossref
+extraFiles:
+  - templates/nature/sn-jnl.cls
+  - templates/nature/bst/sn-nature.bst
+  - templates/nature/bst/sn-basic.bst
+  - templates/nature/bst/sn-mathphys-num.bst
+  - templates/nature/bst/sn-mathphys-ay.bst
+  - templates/nature/bst/sn-aps.bst
+  - templates/nature/bst/sn-vancouver-num.bst
+  - templates/nature/bst/sn-vancouver-ay.bst
+  - templates/nature/bst/sn-apacite.bst
+  - templates/nature/bst/sn-chicago.bst

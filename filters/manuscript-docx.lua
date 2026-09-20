@@ -86,48 +86,29 @@ local function affiliation_label(val)
   return s ~= "" and s or nil
 end
 
---- `corresponding:` 可能是邮箱，也可能只是 true（仅用来打星号）。
-local function corresponding_address(val)
-  if val == nil or val == false then return nil end
-  local s = pandoc.utils.stringify(val)
-  return s:find("@", 1, true) and s or nil
-end
-
---- 一位作者 → Inlines。map 形式排「姓名 + 机构上标 + 通讯星号」，纯名字就只排名字。
-local function author_inlines(a)
-  if not is_map(a) then return as_inlines(a) end
-
-  local line = pandoc.List()
-  if a.name then line:extend(as_inlines(a.name)) end
-  if #line == 0 then return line end          -- 没名字就整条跳过，别只留分隔符
-
-  local aff = affiliation_label(a.affiliation)
-  if aff then line:insert(pandoc.Superscript(pandoc.Str(aff))) end
-  if a.corresponding then line:insert(pandoc.Superscript(pandoc.Str("*"))) end
-  return line
-end
-
---- 一个机构 → Inlines。map 形式排「编号上标 + 名称」，纯字符串就直接排。
-local function affiliation_inlines(aff)
-  if not is_map(aff) then return as_inlines(aff) end
-
-  local line = pandoc.List()
-  if aff.index then
-    line:insert(pandoc.Superscript(pandoc.Str(pandoc.utils.stringify(aff.index))))
-    line:insert(pandoc.Space())
+--- 通讯地址：`email:` 优先，没有才看 `corresponding:`（它可能是邮箱，也可能只是
+--- true，只用来打星号）。两个键都在共享 schema 里，见 catalog/manuscript-frontmatter.md
+--- —— 只认 corresponding 的话，`email: … + corresponding: true` 的作者在投稿包里有
+--- 地址、在 Word 里只剩一个光秃秃的星号。
+local function corresponding_address(a)
+  if not a.corresponding or a.corresponding == false then return nil end
+  for _, key in ipairs({ "email", "corresponding" }) do
+    local v = a[key]
+    if v ~= nil and v ~= true and v ~= false then
+      local s = pandoc.utils.stringify(v)
+      if s:find("@", 1, true) then return s end
+    end
   end
-  if aff.name then line:extend(as_inlines(aff.name)) end
-  if #line == 1 then return pandoc.List({}) end  -- 只有编号、没有名称 = 空条目
-  return line
+  return nil
 end
 
---- 把若干段 Inlines 用 "、" 连起来，空的那些不留分隔符
+--- 把若干段 Inlines 连起来，空的那些不留分隔符。sep 省略时只用空格分隔。
 local function join(parts, sep)
   local line = pandoc.List()
   for _, part in ipairs(parts) do
     if #part > 0 then
       if #line > 0 then
-        line:insert(pandoc.Str(sep))
+        if sep then line:insert(pandoc.Str(sep)) end
         line:insert(pandoc.Space())
       end
       line:extend(part)
@@ -136,6 +117,67 @@ local function join(parts, sep)
   return line
 end
 
+--- 姓名 / 机构的结构化字段，按这个顺序拼。Word 没有 \orgdiv/\orgaddress 这种结构，
+--- 只能拼成一个字符串；顺序固定在这里，免得同一份笔记导 Word 和导投稿源文件时对不上。
+--- 改动这两张表时，writers/latex-submission.lua 的同名字段和
+--- catalog/manuscript-frontmatter.md 的字段顺序段落要一起改。
+local NAME_FIELDS = { "fnm", "spfx", "sur", "sfx" }
+local ORG_FIELDS = { "orgdiv", "orgname", "street", "city", "postcode", "state", "country" }
+
+--- `name:` 优先（本系列 recipe 的原生写法），没有才按 keys 的顺序拼结构化字段。
+--- 两套都支持是有意的 —— 同一份笔记要能同时导 Word 和 Nature-LaTeX 投稿包，
+--- 而 SN 的宏需要 \fnm{}/\sur{} 拆开的姓名。详见 catalog/manuscript-frontmatter.md。
+local function name_or_fields(tbl, keys, sep)
+  if tbl.name then return as_inlines(tbl.name) end
+
+  local parts = pandoc.List()
+  for _, key in ipairs(keys) do parts:insert(as_inlines(tbl[key])) end
+  return join(parts, sep)
+end
+
+--- 一位作者 → Inlines。map 形式排「姓名 + 机构上标 + 通讯星号」，纯名字就只排名字。
+local function author_inlines(a)
+  if not is_map(a) then return as_inlines(a) end
+
+  local line = name_or_fields(a, NAME_FIELDS)
+  if #line == 0 then return line end          -- 没名字就整条跳过，别只留分隔符
+
+  -- `affiliation:` 是本 recipe 的原生键，`affil:` 是 SN 模板的叫法，两个都认
+  local aff = affiliation_label(a.affiliation ~= nil and a.affiliation or a.affil)
+  if aff then line:insert(pandoc.Superscript(pandoc.Str(aff))) end
+  if a.corresponding then line:insert(pandoc.Superscript(pandoc.Str("*"))) end
+  return line
+end
+
+--- 一个机构 → Inlines。map 形式排「编号上标 + 名称」，纯字符串就直接排。
+--- `position` 是这条机构在列表里的序号：schema 说 `index:` 不写就回落到它。
+--- 少了这个回落，`affiliations: [Inst A, Inst B]` 配 `affiliation: [1,2]` 会在
+--- Word 里排出没有编号、对不上作者上标的机构行。
+local function affiliation_inlines(aff, position)
+  local index = position
+  if is_map(aff) and aff.index ~= nil then index = pandoc.utils.stringify(aff.index) end
+
+  if not is_map(aff) then
+    local line = pandoc.List()
+    if index then
+      line:insert(pandoc.Superscript(pandoc.Str(tostring(index))))
+      line:insert(pandoc.Space())
+    end
+    line:extend(as_inlines(aff))
+    return #line > 0 and line or pandoc.List({})
+  end
+
+  local line = pandoc.List()
+  if index then
+    line:insert(pandoc.Superscript(pandoc.Str(tostring(index))))
+    line:insert(pandoc.Space())
+  end
+  line:extend(name_or_fields(aff, ORG_FIELDS, ","))
+  if #line == 1 then return pandoc.List({}) end  -- 只有编号、没有名称 = 空条目
+  return line
+end
+
+--- 把若干段 Inlines 用 "、" 连起来，空的那些不留分隔符
 function Pandoc(doc)
   local meta = doc.meta
   local head = pandoc.List()
@@ -157,8 +199,8 @@ function Pandoc(doc)
     head:insert(styled_para(STYLE.author, author_line))
   end
 
-  for _, aff in ipairs(as_items(meta.affiliations)) do
-    local line = affiliation_inlines(aff)
+  for i, aff in ipairs(as_items(meta.affiliations)) do
+    local line = affiliation_inlines(aff, i)
     if #line > 0 then
       head:insert(styled_para(STYLE.affiliation, line))
     end
@@ -168,7 +210,7 @@ function Pandoc(doc)
   local addresses = {}
   for _, a in ipairs(authors) do
     if is_map(a) then
-      local address = corresponding_address(a.corresponding)
+      local address = corresponding_address(a)
       if address then addresses[#addresses + 1] = address end
     end
   end

@@ -6,13 +6,20 @@
 //   node scripts/check-pr-scope.mjs [--base=<ref>]
 
 import { execFileSync } from 'node:child_process';
+import { CONSUMPTION_DIRS } from './lib/catalog.mjs';
 
 const baseArg = process.argv.find((a) => a.startsWith('--base='));
 const base = process.env.GITHUB_BASE_REF || (baseArg && baseArg.split('=')[1]) || 'main';
 const labels = (process.env.PR_LABELS || '').toLowerCase();
 const hasCoreChangeLabel = /\bcore-change\b/.test(labels);
 
-const PROTECTED = [/^filters\//, /^templates\//, /^csl\//, /^defaults\//, /^preamble\.sty$/, /^scripts\//, /^\.github\//];
+// Every consumption dir is core, plus the shared preamble and the toolchain itself.
+const PROTECTED = [
+  ...CONSUMPTION_DIRS.map((d) => new RegExp(`^${d}/`)),
+  /^preamble\.sty$/,
+  /^scripts\//,
+  /^\.github\//,
+];
 
 function diffLines() {
   for (const range of [`origin/${base}...HEAD`, `${base}...HEAD`]) {

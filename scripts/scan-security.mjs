@@ -83,6 +83,7 @@ const isAllowed = (hit) => allowlist.some((a) => a.file === hit.file && a.patter
 
 const hits = [];
 for (const rel of listFiles('filters', ['.lua'])) hits.push(...scanFile(rel, LUA_RULES, stripLua));
+for (const rel of listFiles('writers', ['.lua'])) hits.push(...scanFile(rel, LUA_RULES, stripLua));
 for (const rel of listFiles('templates', ['.tex', '.latex', '.sty'], true)) hits.push(...scanFile(rel, LATEX_RULES, stripLatex));
 if (fs.existsSync(path.join(ROOT, 'preamble.sty'))) hits.push(...scanFile('preamble.sty', LATEX_RULES, stripLatex));
 

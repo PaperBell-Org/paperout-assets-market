@@ -19,6 +19,7 @@ this before opening a PR.
 | You want to add… | Put the file in… | Also required |
 | --- | --- | --- |
 | A Lua filter | `filters/<name>.lua` | must pass the security scan (below) |
+| A custom Pandoc **writer** | `writers/<name>.lua` | same security scan; goes in a recipe's `to:`, never in `filters:` |
 | A LaTeX/Word template | `templates/<name>.{tex,latex,sty,docx}` | register `.sty`/`.tex` siblings as the recipe's `extraFiles` |
 | A citation style | add an id to `catalog/csl-styles.yaml` (resolved from the official CSL repo) | only vendor a file in `csl/` if it needs to be bundled offline (`offline: true`) |
 | A **complete recipe** (a full export preset) | `defaults/<id>.yaml` **and** `catalog/recipes/<id>/…` | sample + golden (below) |
@@ -57,6 +58,19 @@ Your `defaults/*.yaml` **must**:
    `TEXINPUTS`. Instead list them as the recipe's `extraFiles` so they get packaged.
 4. Never commit **personal identity assets** (logos, signatures). Ship a placeholder
    plus a README explaining replacement — see `templates/cover_letter/`.
+
+A recipe that reaches a system binary *indirectly* — e.g. a Lua shim calling
+`pandoc.utils.run_json_filter` instead of naming `pandoc-crossref` as a bare filter token
+— has nothing to derive from, so it declares the dependency in its `recipe.yaml`:
+
+```yaml
+systemDeps:
+  - pandoc-crossref
+```
+
+That list is **merged** with the derived one, and every name in the result is checked
+against the set the toolchain knows, so a typo fails the build instead of shipping a
+prompt for a binary that does not exist. `requires` is still never hand-written.
 
 `requires` is **auto-derived** from your yaml (`template:`, `filters:`, `crossrefYaml`,
 any uncommented `csl:`). Never hand-write it. Bare filter tokens `citeproc` and
@@ -111,6 +125,11 @@ existing one; to change an existing shared asset, see below.
 External contributions may **only add** files by default. Modifying or deleting an
 existing **core** asset is scope-gated: CI (`check:pr-scope`) flags it, and it needs a
 `core-change` label + maintainer approval. This protects existing recipes.
+
+Maintainers: apply the label **when you open the PR** (`gh pr create --label core-change`).
+The gate reads `github.event.pull_request.labels`, which is a snapshot taken when the event
+fires — labelling afterwards re-runs the workflow and passes, but the first red run stays on
+the PR, and re-running it does not help because it replays the original, label-less payload.
 
 ## Trust tiers
 

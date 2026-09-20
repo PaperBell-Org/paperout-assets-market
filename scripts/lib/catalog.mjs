@@ -4,6 +4,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 
+/**
+ * The consumption tree — the directories that land byte-for-byte in a user's vault
+ * under PaperBell/pandoc/.
+ *
+ * Kept here because adding a directory used to mean remembering several independent
+ * hardcoded copies of this list, and `writers/` was in fact missed in one of them:
+ * check-pr-scope's PROTECTED set, which is what stops an outside PR from modifying a
+ * core asset without maintainer review. Three consumers now share this array verbatim.
+ *
+ * NOT shared: build-index's dir→asset-type→extension mapping and scan-security's
+ * per-directory rule set. Those genuinely differ per directory, and adding a leaf dir
+ * should still cost one explicit, readable line in each.
+ */
+export const CONSUMPTION_DIRS = ['defaults', 'filters', 'writers', 'templates', 'csl'];
+
 /** defaults that are NOT user-facing recipes. */
 export const INTERNAL_DEFAULTS = {
   crossref: 'include', // shared pandoc-crossref config, referenced via crossrefYaml

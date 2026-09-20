@@ -1,0 +1,105 @@
+---
+## General options
+from: markdown+tex_math_single_backslash+wikilinks_title_after_pipe+mark+autolink_bare_uris+pipe_tables+table_captions+link_attributes
+standalone: true
+output-file: submission.zip
+
+# 自定义 writer（不是 filter）。它把渲染好的 main.tex、只含被引条目的 references.bib、
+# sn-jnl.cls、当前样式的 .bst 和所有图片打成一个 zip。
+# 详见 writers/latex-submission.lua 的文件头。
+to: ${USERDATA}/writers/latex-submission.lua
+
+data-dir: ${.}/..                             #! 当前 defaults 文件夹的上一级，即 pandoc 目录
+
+## Templates
+template: ${USERDATA}/templates/nature-latex.latex
+
+# \citep{} / \citet{}，而不是渲染好的引文 —— 期刊要的是能重排的源文件。
+# natbib 由 sn-jnl.cls 自己加载，这里只是告诉 pandoc 用哪种引用命令。
+cite-method: natbib
+
+## Bibliography
+# bibliography: ${USERDATA}/../../mybib.bib   #! (commented by sync: plugin injects --bibliography)
+# csl: ${USERDATA}/PLACEHOLDER.csl            #! 本链不走 citeproc，csl 无效；样式由 .bst 决定
+
+# 过滤器顺序：
+# 1. div / block_ids / mute —— 先清掉 Obsidian 私有语法（hidden Div、%% 批注、段末
+#    ^blockid、Dataview 行），否则它们会原样印进投给期刊的 .tex
+# 2. lineno_default —— 只负责把 lineno 默认置为 true；行号本身是 sn-jnl 的 class 选项，
+#    由 writer 读 meta.lineno 决定要不要加 `lineno`
+# 3. 图/数学/表格/链接的常规处理，与 PDF 链一致
+# 4. crossref-latex.lua 跑 pandoc-crossref，并告诉它目标是 latex —— 直接写
+#    `pandoc-crossref` 的话，它会把本 writer 的**路径**当成格式名，认不出 LaTeX 而退化
+#    （烤死 caption 前缀和交叉引用）。原因见该文件头。
+# 5. figures-at-end —— 默认 no-op；笔记写 figures-at-end: true 才生效
+#
+# 没有 citeproc：要留住 \citep{}，让 BibTeX 去排参考文献。
+filters:
+  - ${USERDATA}/filters/div.lua
+  - ${USERDATA}/filters/block_ids.lua
+  - ${USERDATA}/filters/mute.lua
+  - ${USERDATA}/filters/lineno_default.lua
+  - ${USERDATA}/filters/quotes-i18n.lua
+  - ${USERDATA}/filters/promote_figures.lua
+  - ${USERDATA}/filters/image.lua
+  - ${USERDATA}/filters/xlsx_table.lua
+  - ${USERDATA}/filters/math.lua
+  - ${USERDATA}/filters/shift_headings.lua
+  - ${USERDATA}/filters/link.lua
+  - ${USERDATA}/filters/highlight.lua
+  - ${USERDATA}/filters/crossref-latex.lua
+  - ${USERDATA}/filters/figures-at-end.lua
+
+metadata:
+  # 这里**故意不写 sn-refstyle**：defaults 的 metadata: 会盖掉笔记的 frontmatter
+  # （pandoc 里 -M / defaults metadata 的优先级高于文档 YAML），写在这儿就等于
+  # 把参考文献样式焊死、笔记再也换不了刊。默认值放在 writer 的 DEFAULT_REFSTYLE
+  # 常量里（sn-nature），笔记写 sn-refstyle: sn-basic 即可覆盖。可选值见
+  # writers/latex-submission.lua 的 REFSTYLE_BST 表。
+
+  # 整个接管 documentclass 选项（笔记里写 sn-options: [pdflatex, sn-basic, twocolumn]）。
+  # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。
+  # 关行号：lineno: false
+
+  # For pandoc-crossref
+  crossrefYaml: ${USERDATA}/defaults/crossref.yaml
+  chapters: false
+  chaptersDepth: 1
+  numberSections: false
+  chapDelim: "-"
+
+  # 图表前缀：期刊写法。写成列表才有复数形式 —— 标量会让 [@fig:a;@fig:b] 渲染成
+  # "Figure 1, 2" 而不是 "Figures 1, 2"。
+  figureTitle: "Figure"
+  figPrefix: ["Figure", "Figures"]
+  tableTitle: "Table"
+  tblPrefix: ["Table", "Tables"]
+
+variables:
+  # 强制加载 graphicx：模板里 \includegraphics 那段在 $if(graphics)$ 后面。
+  graphics: true
+
+# ============================================================
+# nature-latex.yaml —— Springer Nature 投稿源文件包（Nature-LaTeX）
+#
+# 用途：把 Obsidian / Longform 的手稿导成期刊要的 LaTeX 源文件 zip：
+#
+#   submission.zip
+#   ├── main.tex        \documentclass{sn-jnl}，单文件、无 \input
+#   ├── references.bib  只含本文引用到的条目（从全局 bib 里抽）
+#   ├── sn-jnl.cls      Springer Nature 文档类
+#   ├── sn-nature.bst   当前样式对应的那一个
+#   └── figures/…       所有被引用的图，文件名已净化成纯 ASCII
+#
+# 编译：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+#
+# 与 paperbell.yaml（PDF 链）有意的差别：
+# - 没有 embed-resources —— 正好相反，图片要单独成文件
+# - 没有 citeproc —— 要留住 \citep{}
+# - 没有 preamble.lua / callout.lua / codeblock.lua —— 这三个成套，callout 产
+#   \begin{tcolorbox}、preamble 往 header-includes 塞 tcolorbox/tikz/algorithm。
+#   投稿源文件不需要 callout 盒子，多带一坨宏包只是多一片编译失败面
+# - 没有任何 CJK / mainfont 字体元数据 —— 会触发 fontspec，pdflatex 路线上必炸
+#
+# 版式全部由 sn-jnl.cls 决定：换刊改 sn-refstyle 即可，不用动 filter 或模板。
+# ============================================================

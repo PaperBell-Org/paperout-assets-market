@@ -23,12 +23,13 @@ Two cleanly separated trees.
 ```
 defaults/    Pandoc defaults *.yaml (one per recipe + shared includes)
 filters/     Lua filters (*.lua)
+writers/     Custom Pandoc Lua writers (*.lua) — a recipe's `to:`
 templates/   LaTeX / Word templates (*.tex, *.latex, *.sty, *.docx)
 csl/         Citation styles (*.csl)
 preamble.sty shared LaTeX preamble
 ```
 
-These four dirs are byte-for-byte what a user gets in their vault under
+These five dirs are byte-for-byte what a user gets in their vault under
 `PaperBell/pandoc/`. Every `defaults/*.yaml` references its resources via
 `${USERDATA}/...` and sets `data-dir: ${.}/..`, so the toolchain self-locates
 wherever it is downloaded (see the invariants in [CONTRIBUTING.md](CONTRIBUTING.md)).
@@ -64,7 +65,7 @@ in `catalog/csl-styles.yaml`, resolved on demand from the official
 export works without a network. The plugin fetches a style to the user's disk for
 `pandoc --csl`.
 
-Keeping metadata out of the four asset dirs keeps the packaged zips clean and gives
+Keeping metadata out of the asset dirs keeps the packaged zips clean and gives
 the frontend one predictable tree to read.
 
 ---
@@ -76,7 +77,7 @@ Nothing is downloaded by hand. Each git tag publishes a **GitHub Release** carry
 
 - **Whole toolchain (as today).** Paste the stable URL
   `…/releases/latest/download/full.zip` into the plugin's *Pandoc assets URL* and
-  download. Files land under `PaperBell/pandoc/` with the `defaults/ filters/
+  download. Files land under `PaperBell/pandoc/` with the `defaults/ filters/ writers/
   templates/ csl/` layout — identical to the current setup. Every bundle is published
   under two names: `<id>-<version>.zip`, which is what `index.json` points at and
   pins a `sha256` to, and an unversioned `<id>.zip` alias. Paste the alias — a URL

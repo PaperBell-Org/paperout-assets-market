@@ -1,0 +1,585 @@
+$--============================================================================
+$-- nature-latex.latex —— Springer Nature 投稿源文件的 pandoc LaTeX 模板
+$--
+$-- 只给 writers/latex-submission.lua 这个 custom writer 用，配 defaults/nature-latex.yaml。
+$--
+$-- 来历：`pandoc --print-default-template=latex`，**并把 6 个 partial 全部内联展平**
+$-- （passoptions / fonts / font-settings / common / after-header-includes / hypersetup）。
+$--
+$-- 为什么必须展平：partial 解析优先命中 data-dir 下的 templates/，而本仓库已经有一个
+$-- templates/fonts.latex —— 它是 pandoc 拆分前的旧合并版，仍含着如今 font-settings.latex
+$-- 里的 \setmainfont 等内容。不展平的话 $fonts.latex()$ 会命中这份陈旧副本、
+$-- $font-settings.latex()$ 再命中 pandoc 内置那份，字体设置被加载两遍。
+$--
+$-- 为什么从 pandoc 默认模板派生、而不是照着 sn-article.tex 手写：latex writer 会用到
+$-- \tightlist、\pandocbounded、\passthrough、longtable/booktabs、subcaption、
+$-- $highlighting-macros$ 一整套宏，手写必然漏，而漏了只有真跑 pdflatex 才炸得出来。
+$--
+$-- 相对 pandoc 默认模板，只动了 6 处（每处都在原位留了 $-- 注释说明）：
+$--   1. \documentclass  → sn-jnl，选项走 $sn-options$
+$--   2. geometry 加载块 → 删（cls 自己 RequirePackage{geometry} 并定版心）
+$--   3. natbib/biblatex 导言区加载块 → 删（cls 自己加载 natbib 并发 \bibliographystyle）
+$--   4. \title/\author/\date → SN 抬头（\title[短标题]、$sn-titleblock$、\abstract{}、\keywords{}）
+$--   5. abstract 环境 → 删（SN 用导言区的 \abstract{} 命令）
+$--   6. 文末 natbib/biblatex 分支 → 单条 \bibliography{}，不带 \bibliographystyle
+$--
+$-- beamer / fontspec / xeCJK / svg / setspace 等分支原样留着 —— 它们都在 $if(...)$ 后面，
+$-- 而 defaults/nature-latex.yaml 一个都不设，因此是惰性的。删它们只会增加改坏模板的风险。
+$--
+$-- 编译链：pdflatex → bibtex → pdflatex ×2（BibTeX，不是 biber）。
+$--============================================================================
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode$for(hyperrefoptions)$,$hyperrefoptions$$endfor$}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+$if(colorlinks)$
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+$endif$
+$if(CJKmainfont)$
+\PassOptionsToPackage{space}{xeCJK}
+$endif$
+
+$-- Springer Nature 文档类。选项由 writers/latex-submission.lua 算好后塞进
+$-- sn-options（默认 referee,lineno,pdflatex,sn-nature）——
+$-- referee = 双倍行距，lineno = 行号，两者都是 class 选项，不是宏包。
+\documentclass[$sn-options$]{sn-jnl}
+$if(beamerarticle)$
+\usepackage{beamerarticle} % needs to be loaded first
+$endif$
+\usepackage{xcolor}
+$-- geometry: sn-jnl.cls 自己 \RequirePackage{geometry} 并定好版心，这里再带选项
+$-- 加载一次就是 option clash。版心不归本模板管。
+\usepackage{amsmath,amssymb}
+$if(cancel)$
+\usepackage{cancel}
+$endif$
+$--
+$-- section numbering
+$--
+$if(numbersections)$
+\setcounter{secnumdepth}{$if(secnumdepth)$$secnumdepth$$else$5$endif$}
+$else$
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+$endif$
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[$if(fontenc)$$fontenc$$else$T1$endif$]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+$if(mathspec)$
+  \ifXeTeX
+    \usepackage{mathspec} % this also loads fontspec
+  \else
+    \usepackage{unicode-math} % this also loads fontspec
+  \fi
+$else$
+  \usepackage{unicode-math} % this also loads fontspec
+$endif$
+  \defaultfontfeatures{Scale=MatchLowercase}$-- must come before Beamer theme
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+$if(fontfamily)$
+$else$
+$-- Set default font before Beamer theme so the theme can override it
+\usepackage{lmodern}
+$endif$
+
+$-- User font settings (must come after default font and Beamer theme)
+$if(fontfamily)$
+\usepackage[$for(fontfamilyoptions)$$fontfamilyoptions$$sep$,$endfor$]{$fontfamily$}
+$endif$
+\ifPDFTeX\else
+  % xetex/luatex font selection
+$if(mainfont)$
+$if(mainfontfallback)$
+  \ifLuaTeX
+    \usepackage{luaotfload}
+    \directlua{luaotfload.add_fallback("mainfontfallback",{
+      $for(mainfontfallback)$"$mainfontfallback$"$sep$,$endfor$
+    })}
+  \fi
+$endif$
+  \setmainfont[$for(mainfontoptions)$$mainfontoptions$$sep$,$endfor$$if(mainfontfallback)$,RawFeature={fallback=mainfontfallback}$endif$]{$mainfont$}
+$endif$
+$if(sansfont)$
+$if(sansfontfallback)$
+  \ifLuaTeX
+    \usepackage{luaotfload}
+    \directlua{luaotfload.add_fallback("sansfontfallback",{
+      $for(sansfontfallback)$"$sansfontfallback$"$sep$,$endfor$
+    })}
+  \fi
+$endif$
+  \setsansfont[$for(sansfontoptions)$$sansfontoptions$$sep$,$endfor$$if(sansfontfallback)$,RawFeature={fallback=sansfontfallback}$endif$]{$sansfont$}
+$endif$
+$if(monofont)$
+$if(monofontfallback)$
+  \ifLuaTeX
+    \usepackage{luaotfload}
+    \directlua{luaotfload.add_fallback("monofontfallback",{
+      $for(monofontfallback)$"$monofontfallback$"$sep$,$endfor$
+    })}
+  \fi
+$endif$
+  \setmonofont[$for(monofontoptions)$$monofontoptions$$sep$,$endfor$$if(monofontfallback)$,RawFeature={fallback=monofontfallback}$endif$]{$monofont$}
+$endif$
+$for(fontfamilies)$
+  \newfontfamily{$fontfamilies.name$}[$for(fontfamilies.options)$$fontfamilies.options$$sep$,$endfor$]{$fontfamilies.font$}
+$endfor$
+$if(mathfont)$
+$if(mathspec)$
+  \ifXeTeX
+    \setmathfont(Digits,Latin,Greek)[$for(mathfontoptions)$$mathfontoptions$$sep$,$endfor$]{$mathfont$}
+  \else
+    \setmathfont[$for(mathfontoptions)$$mathfontoptions$$sep$,$endfor$]{$mathfont$}
+  \fi
+$else$
+  \setmathfont[$for(mathfontoptions)$$mathfontoptions$$sep$,$endfor$]{$mathfont$}
+$endif$
+$endif$
+$if(CJKmainfont)$
+  \ifXeTeX
+    \usepackage{xeCJK}
+    \setCJKmainfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}
+$if(CJKsansfont)$
+    \setCJKsansfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKsansfont$}
+$endif$
+$if(CJKmonofont)$
+    \setCJKmonofont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmonofont$}
+$endif$
+  \fi
+$endif$
+$if(luatexjapresetoptions)$
+  \ifLuaTeX
+    \usepackage[$for(luatexjapresetoptions)$$luatexjapresetoptions$$sep$,$endfor$]{luatexja-preset}
+  \fi
+$endif$
+$if(CJKmainfont)$
+  \ifLuaTeX
+    \usepackage[$for(luatexjafontspecoptions)$$luatexjafontspecoptions$$sep$,$endfor$]{luatexja-fontspec}
+    \setmainjfont[$for(CJKoptions)$$CJKoptions$$sep$,$endfor$]{$CJKmainfont$}
+  \fi
+$endif$
+\fi
+$if(zero-width-non-joiner)$
+%% Support for zero-width non-joiner characters.
+\makeatletter
+\def\zerowidthnonjoiner{%
+  % Prevent ligatures and adjust kerning, but still support hyphenating.
+  \texorpdfstring{%
+    \TextOrMath{\nobreak\discretionary{-}{}{\kern.03em}%
+      \ifvmode\else\nobreak\hskip\z@skip\fi}{}%
+  }{}%
+}
+\makeatother
+\ifPDFTeX
+  \DeclareUnicodeCharacter{200C}{\zerowidthnonjoiner}
+\else
+  \catcode`^^^^200c=\active
+  \protected\def ^^^^200c{\zerowidthnonjoiner}
+\fi
+%% End of ZWNJ support
+$endif$
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[$for(microtypeoptions)$$microtypeoptions$$sep$,$endfor$]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+
+
+$if(linestretch)$
+\usepackage{setspace}
+$endif$
+$--
+$-- paragraph formatting
+$--
+$if(indent)$
+$else$
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+$endif$
+$if(beamer)$
+$else$
+$if(block-headings)$
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+$endif$
+$endif$
+$--
+$-- verbatim in notes
+$--
+$if(verbatim-in-note)$
+\usepackage{fancyvrb}
+$endif$
+$-- highlighting
+$if(listings)$
+\usepackage{listings}
+\newcommand{\passthrough}[1]{#1}
+\lstset{defaultdialect=[5.3]Lua}
+\lstset{defaultdialect=[x86masm]Assembler}
+$endif$
+$if(lhs)$
+\lstnewenvironment{code}{\lstset{language=Haskell,basicstyle=\small\ttfamily}}{}
+$endif$
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+$--
+$-- tables
+$--
+$if(tables)$
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % pandoc >=3.9 wraps uncaptioned tables in \LTcaptype{none}; custom templates must define it (No counter 'none' defined)
+$if(multirow)$
+\usepackage{multirow}
+$endif$
+\usepackage{calc} % for calculating minipage widths
+$if(beamer)$
+\usepackage{caption}
+% Make caption package work with longtable
+\makeatletter
+\def\fnum@table{\tablename~\thetable}
+\makeatother
+$else$
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+$endif$
+$endif$
+$--
+$-- graphics
+$--
+$if(graphics)$
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+$endif$
+$if(svg)$
+\usepackage{svg}
+$endif$
+$--
+$-- strikeout/underline
+$--
+$if(strikeout)$
+\ifLuaTeX
+  \usepackage{luacolor}
+  \usepackage[soul]{lua-ul}
+\else
+  \usepackage{soul}
+$if(beamer)$
+  \makeatletter
+  \let\HL\hl
+  \renewcommand\hl{% fix for beamer highlighting
+    \let\set@color\beamerorig@set@color
+    \let\reset@color\beamerorig@reset@color
+    \HL}
+  \makeatother
+$endif$
+$if(CJKmainfont)$
+  \ifXeTeX
+    % soul's \st doesn't work for CJK:
+    \usepackage{xeCJKfntef}
+    \renewcommand{\st}[1]{\sout{#1}}
+  \fi
+$endif$
+\fi
+$endif$
+$--
+$-- CSL citations
+$--
+$if(csl-refs)$
+% definitions for citeproc citations
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {\begin{list}{}{%
+  \setlength{\itemindent}{0pt}
+  \setlength{\leftmargin}{0pt}
+  \setlength{\parsep}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+   \setlength{\leftmargin}{\cslhangindent}
+   \setlength{\itemindent}{-1\cslhangindent}
+  \fi
+  % set entry spacing
+  \setlength{\itemsep}{#2\baselineskip}}}
+ {\end{list}}
+\usepackage{calc}
+\newcommand{\CSLBlock}[1]{\hfill\break\parbox[t]{\linewidth}{\strut\ignorespaces#1\strut}}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{\strut#1\strut}}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+$--
+$-- Babel language support
+$--
+$if(lang)$
+\ifLuaTeX
+\usepackage[bidi=basic$if(shorthands)$$else$,shorthands=off$endif$$for(babeloptions)$,$babeloptions$$endfor$]{babel}
+\else
+\usepackage[bidi=default$if(shorthands)$$else$,shorthands=off$endif$$for(babeloptions)$,$babeloptions$$endfor$]{babel}
+\fi
+$if(babel-lang)$
+$if(mainfont)$
+\ifPDFTeX
+\else
+\babelfont{rm}[$for(mainfontoptions)$$mainfontoptions$$sep$,$endfor$$if(mainfontfallback)$,RawFeature={fallback=mainfontfallback}$endif$]{$mainfont$}
+\fi
+$endif$
+$endif$
+$for(babelfonts/pairs)$
+\babelfont[$babelfonts.key$]{rm}{$babelfonts.value$}
+$endfor$
+\ifLuaTeX
+  \usepackage{selnolig} % disable illegal ligatures
+\fi
+$endif$
+$--
+$-- pagestyle
+$--
+$if(pagestyle)$
+\pagestyle{$pagestyle$}
+$endif$
+$--
+$-- prevent overfull lines
+$--
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+$--
+$-- tight lists
+$--
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+$--
+$-- subfigure support
+$--
+$if(subfigure)$
+\usepackage{subcaption}
+$endif$
+$--
+$-- text direction support for pdftex
+$--
+$if(dir)$
+\ifPDFTeX
+  \TeXXeTstate=1
+  \newcommand{\RL}[1]{\beginR #1\endR}
+  \newcommand{\LR}[1]{\beginL #1\endL}
+  \newenvironment{RTL}{\beginR}{\endR}
+  \newenvironment{LTR}{\beginL}{\endL}
+\fi
+\ifluatex
+  \newcommand{\RL}[1]{\bgroup\textdir TRT#1\egroup}
+  \newcommand{\LR}[1]{\bgroup\textdir TLT#1\egroup}
+  \newenvironment{RTL}{\textdir TRT\pardir TRT\bodydir TRT}{}
+  \newenvironment{LTR}{\textdir TLT\pardir TLT\bodydir TLT}{}
+\fi
+$endif$
+$--
+$-- bibliography support support for natbib and biblatex
+$--
+$-- 这里原本是 pandoc 的 natbib / biblatex 加载块，**故意删掉**：
+$-- sn-jnl.cls 自己 \usepackage{natbib}，也自己按 documentclass 选项发
+$-- \bibliographystyle{}（cls 1640-1735 行）。再写一遍 = option clash +
+$-- 参考文献样式被覆盖。正文末尾只发 \bibliography{}，见文件末。
+$--
+$-- csquotes
+$--
+$if(csquotes)$
+\usepackage[$for(csquotesoptions)$$csquotesoptions$$sep$,$endfor$]{csquotes}
+$endif$
+
+$for(header-includes)$
+$header-includes$
+$endfor$
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{$if(urlstyle)$$urlstyle$$else$same$endif$}
+$if(links-as-notes)$
+% Make links footnotes instead of hotlinks:
+\DeclareRobustCommand{\href}[2]{#2\footnote{\url{#1}}}
+$endif$
+$if(verbatim-in-note)$
+\VerbatimFootnotes % allow verbatim text in footnotes
+$endif$
+
+\hypersetup{
+$if(title-meta)$
+  pdftitle={$title-meta$},
+$endif$
+$if(author-meta)$
+  pdfauthor={$author-meta$},
+$endif$
+$if(lang)$
+  pdflang={$lang$},
+$endif$
+$if(subject)$
+  pdfsubject={$subject$},
+$endif$
+$if(keywords)$
+  pdfkeywords={$for(keywords)$$keywords$$sep$, $endfor$},
+$endif$
+$if(colorlinks)$
+  colorlinks=true,
+  linkcolor={$if(linkcolor)$$linkcolor$$else$Maroon$endif$},
+  filecolor={$if(filecolor)$$filecolor$$else$Maroon$endif$},
+  citecolor={$if(citecolor)$$citecolor$$else$Blue$endif$},
+  urlcolor={$if(urlcolor)$$urlcolor$$else$Blue$endif$},
+$else$
+$if(boxlinks)$
+$else$
+  hidelinks,
+$endif$
+$endif$
+  pdfcreator={LaTeX via pandoc}}
+
+
+$if(pdf-trailer-id)$
+
+\ifXeTeX
+\special{pdf:trailerid [ $pdf-trailer-id$ ]}
+\fi
+\ifPDFTeX
+\pdftrailerid{}
+\pdftrailer{/ID [ $pdf-trailer-id$ ]}
+\fi
+\ifLuaTeX
+\pdfvariable trailerid {[ $pdf-trailer-id$ ]}
+\fi
+$endif$
+
+$-- SN 的抬头。\title 的可选参数是页眉用的短标题。
+$if(title)$
+\title[$if(shorttitle)$$shorttitle$$else$$title$$endif$]{$title$$if(thanks)$\thanks{$thanks$}$endif$}
+$endif$
+$-- \author*[..]{\fnm{}\sur{}}\email{} 和 \affil*[..]{\orgdiv{}\orgname{}\orgaddress{}}
+$-- 由 writers/latex-submission.lua 拼好 —— 扁平写法要按最后一个空格拆姓名，
+$-- 模板语言做不到。
+$if(sn-titleblock)$
+
+$sn-titleblock$
+$endif$
+$if(abstract)$
+
+\abstract{$abstract$}
+$endif$
+$if(keywords)$
+
+\keywords{$for(keywords)$$keywords$$sep$, $endfor$}
+$endif$
+
+\begin{document}
+$if(has-frontmatter)$
+\frontmatter
+$endif$
+$-- SN 用 \abstract{} 命令（在导言区，见上），不是 abstract 环境
+$if(title)$
+\maketitle
+$endif$
+
+$for(include-before)$
+$include-before$
+
+$endfor$
+$if(toc)$
+$if(toc-title)$
+\renewcommand*\contentsname{$toc-title$}
+$endif$
+{
+$if(colorlinks)$
+$if(toccolor)$
+\hypersetup{linkcolor=$toccolor$}
+$endif$
+$endif$
+\setcounter{tocdepth}{$toc-depth$}
+\tableofcontents
+}
+$endif$
+$if(lof)$
+\listoffigures
+$endif$
+$if(lot)$
+\listoftables
+$endif$
+$if(linestretch)$
+\setstretch{$linestretch$}
+$endif$
+$if(has-frontmatter)$
+\mainmatter
+$endif$
+$body$
+
+$if(has-frontmatter)$
+\backmatter
+$endif$
+$if(nocite-ids)$
+\nocite{$for(nocite-ids)$$it$$sep$, $endfor$}
+$endif$
+$-- 只发 \bibliography{}，不发 \bibliographystyle{} —— 后者是 cls 的活。
+$-- 参数是不带扩展名的基名（BibTeX 约定），writer 已把它改写成 references。
+$if(bibliography)$
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
+
+$endif$
+$for(include-after)$
+$include-after$
+
+$endfor$
+\end{document}

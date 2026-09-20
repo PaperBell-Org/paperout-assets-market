@@ -4,7 +4,7 @@
 //
 //   node scripts/pack-bundle.mjs --tag 1.0.0 [--dry-run]
 //
-// Each zip wraps the four consumption dirs in exactly ONE top-level folder
+// Each zip wraps the consumption dirs in exactly ONE top-level folder
 // (paperout/…), so the plugin's leading-dir strip yields defaults/ at the root
 // (normalization invariant #5).
 
@@ -13,7 +13,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseDefaultsFile } from './lib/parse-defaults.mjs';
-import { loadRecipeManifests, loadBundleDefs } from './lib/catalog.mjs';
+import { loadRecipeManifests, loadBundleDefs, CONSUMPTION_DIRS } from './lib/catalog.mjs';
 import { sha256File } from './lib/hash.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -46,7 +46,7 @@ function recipeClosure(id, manifests) {
 function bundleClosure(def, manifests) {
   const files = new Set();
   if (def.includeAll) {
-    for (const dir of ['defaults', 'filters', 'templates', 'csl']) {
+    for (const dir of CONSUMPTION_DIRS) {
       if (exists(dir)) for (const f of walk(dir)) files.add(f);
     }
     if (exists('preamble.sty')) files.add('preamble.sty');

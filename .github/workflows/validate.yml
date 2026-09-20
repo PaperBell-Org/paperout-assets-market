@@ -37,7 +37,7 @@ jobs:
           sudo luarocks install luacheck
 
       - name: Lua lint
-        run: luacheck filters/ --config .luacheckrc
+        run: luacheck filters/ writers/ --config .luacheckrc
 
       - name: Security scan (Lua/LaTeX high-risk APIs)
         run: node scripts/scan-security.mjs
