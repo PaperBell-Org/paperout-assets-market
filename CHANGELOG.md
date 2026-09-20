@@ -2,7 +2,7 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
-## Unreleased
+## 1.1.0 — 2026-09-20
 
 **`nature-latex` now defaults to the typeset form** — single-spaced, no line numbers,
 figures and tables collected at the end. That is what the journal prints, so it is what
