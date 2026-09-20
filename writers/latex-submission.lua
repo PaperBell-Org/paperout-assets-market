@@ -154,13 +154,15 @@ local function class_options(meta)
   local explicit = meta['sn-options']
 
   if explicit == nil then
-    -- 默认：送审形态 —— 双倍行距 + 行号 + pdflatex + Nature 参考文献样式。
-    -- lineno 沿用 lineno_default.lua 的约定：笔记里写 lineno: false 就关掉。
-    local lineno = true
-    if meta.lineno ~= nil then
-      local str = pandoc.utils.stringify(meta.lineno):lower()
-      lineno = not (str == 'false' or str == 'no' or str == '')
+    -- 默认：出版形态 —— 单倍行距、无行号，配 filters/nature-latex-layout.lua 的
+    -- 图表后置，就是期刊排出来的样子。送审要的双倍行距 + 行号是两个独立开关，
+    -- 笔记里写 referee: true / lineno: true 各自打开，或者用 sn-options 整体接管。
+    local function opt(key)
+      if meta[key] == nil then return false end
+      local str = pandoc.utils.stringify(meta[key]):lower():gsub('%s+', '')
+      return not (str == 'false' or str == 'no' or str == '0' or str == 'off' or str == '')
     end
+    local referee, lineno = opt('referee'), opt('lineno')
 
     local refstyle = DEFAULT_REFSTYLE
     if meta['sn-refstyle'] ~= nil then
@@ -171,7 +173,8 @@ local function class_options(meta)
       refstyle = DEFAULT_REFSTYLE
     end
 
-    local options = { 'referee' }
+    local options = {}
+    if referee then options[#options + 1] = 'referee' end
     if lineno then options[#options + 1] = 'lineno' end
     options[#options + 1] = 'pdflatex'
     options[#options + 1] = refstyle
