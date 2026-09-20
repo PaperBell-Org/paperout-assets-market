@@ -28,7 +28,9 @@ cite-method: natbib
 # 2. lineno_default —— 只负责把 lineno 默认置为 true；行号本身是 sn-jnl 的 class 选项，
 #    由 writer 读 meta.lineno 决定要不要加 `lineno`
 # 3. 图/数学/表格/链接的常规处理，与 PDF 链一致
-# 4. pandoc-crossref 处理图、表、公式编号与交叉引用
+# 4. crossref-latex.lua 跑 pandoc-crossref，并告诉它目标是 latex —— 直接写
+#    `pandoc-crossref` 的话，它会把本 writer 的**路径**当成格式名，认不出 LaTeX 而退化
+#    （烤死 caption 前缀和交叉引用）。原因见该文件头。
 # 5. figures-at-end —— 默认 no-op；笔记写 figures-at-end: true 才生效
 #
 # 没有 citeproc：要留住 \citep{}，让 BibTeX 去排参考文献。
@@ -45,7 +47,7 @@ filters:
   - ${USERDATA}/filters/shift_headings.lua
   - ${USERDATA}/filters/link.lua
   - ${USERDATA}/filters/highlight.lua
-  - pandoc-crossref
+  - ${USERDATA}/filters/crossref-latex.lua
   - ${USERDATA}/filters/figures-at-end.lua
 
 metadata:
@@ -54,10 +56,6 @@ metadata:
   # 把参考文献样式焊死、笔记再也换不了刊。默认值放在 writer 的 DEFAULT_REFSTYLE
   # 常量里（sn-nature），笔记写 sn-refstyle: sn-basic 即可覆盖。可选值见
   # filters/latex-submission.lua 的 REFSTYLE_BST 表。
-
-  # 让 pandoc-crossref 把编号包进 Link（target "#fig:x"），writer 再换成真 \ref{}。
-  # 不开这个开关，交叉引用就是死文本，期刊重排图序后全错。
-  linkReferences: true
 
   # 整个接管 documentclass 选项（笔记里写 sn-options: [pdflatex, sn-basic, twocolumn]）。
   # 不写就是 referee,lineno,pdflatex,<sn-refstyle> —— 双倍行距 + 行号的送审形态。

@@ -20,6 +20,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sha256 } from './lib/hash.mjs';
+import { readZip } from './lib/docx.mjs';
 import { parseDefaultsFile } from './lib/parse-defaults.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -49,6 +50,20 @@ function recipeIds() {
 
 function recipeTo(defaults) {
   return String(parseDefaultsFile(defaults).doc.to || '').trim();
+}
+
+// What a recipe actually produces. fingerprint() and fullBuild() both need this, and
+// deriving it twice means a new output kind only gets handled in whichever one you
+// remember to edit.
+//   zip    — `to:` is a path to a custom Lua writer (pandoc 3 accepts that)
+//   docx   — Word
+//   beamer — slides
+//   latex  — everything else; PDF recipes render this via xelatex at full build
+function outputKind(to) {
+  if (to.endsWith('.lua')) return 'zip';
+  if (to === 'docx') return 'docx';
+  if (to === 'beamer') return 'beamer';
+  return 'latex';
 }
 
 // Some filters inject the absolute asset path (e.g. cover_letter.lua's AssetDir →
@@ -81,51 +96,61 @@ function normalize(buf) {
 // compares entries rather than file hashes).
 const TEXT_ENTRY = /\.(tex|bib|cls|bst|txt|md|json|ya?ml)$/i;
 
-function zipFingerprint(id, sample, defaults) {
+function exportTo(id, sample, defaults, ext) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
-  const zip = path.join(tmp, 'out.zip');
-  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', zip], { stdio: 'pipe' });
+  const out = path.join(tmp, `out.${ext}`);
+  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', out], { stdio: 'pipe' });
+  return out;
+}
 
-  const names = execFileSync('unzip', ['-Z1', zip], { maxBuffer: 16 * 1024 * 1024 })
-    .toString('utf8').split('\n').map((s) => s.trim()).filter(Boolean).sort();
-
-  const parts = [];
-  for (const name of names) {
-    const content = execFileSync('unzip', ['-p', zip, name], { maxBuffer: 64 * 1024 * 1024 });
-    // normalize() round-trips through utf8, which would mangle binary payloads —
+function zipFingerprint(zip) {
+  // readZip() (scripts/lib/docx.mjs) is a generic reader despite the module name: it
+  // walks the central directory and inflates each entry. Shelling out to `unzip` would
+  // cost one process per entry, re-scan the archive every time, and make the `unzip`
+  // binary load-bearing in a path that has a pure-Node answer.
+  const entries = readZip(fs.readFileSync(zip)).sort((a, b) => (a.name < b.name ? -1 : 1));
+  const parts = entries.map(({ name, data }) =>
+    // normalize() round-trips through utf8, which would mangle binary payloads — and
     // only text entries can carry an absolute repo path worth normalizing anyway.
-    parts.push(`${name}\n${sha256(TEXT_ENTRY.test(name) ? normalize(content) : content)}\n`);
-  }
+    `${name}\n${sha256(TEXT_ENTRY.test(name) ? normalize(data) : data)}\n`);
   return sha256(Buffer.from(parts.join(''), 'utf8'));
 }
 
 function fingerprint(id) {
   const sample = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md');
   const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
-  const to = recipeTo(defaults);
-  if (to.endsWith('.lua')) return zipFingerprint(id, sample, defaults);
-  if (to === 'docx') {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
-    const docx = path.join(tmp, 'out.docx');
-    execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', docx], { stdio: 'pipe' });
+  const kind = outputKind(recipeTo(defaults));
+
+  if (kind === 'zip') {
+    const zip = exportTo(id, sample, defaults, 'zip');
+    // Remember it: a --full run would otherwise repeat this entire export just to
+    // assert the file is non-empty, which this run has already proven.
+    built.set(id, zip);
+    return zipFingerprint(zip);
+  }
+  if (kind === 'docx') {
+    const docx = exportTo(id, sample, defaults, 'docx');
+    built.set(id, docx);
     const xml = execFileSync('unzip', ['-p', docx, 'word/document.xml'], { maxBuffer: 64 * 1024 * 1024 });
     return sha256(normalize(xml));
   }
-  const writer = to === 'beamer' ? 'beamer' : 'latex';
-  const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-t', writer, '-o', '-'], {
+
+  const out = execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-t', kind, '-o', '-'], {
     maxBuffer: 64 * 1024 * 1024,
   });
   return sha256(normalize(out));
 }
 
+// Recipes whose fingerprint already required a real export, keyed by id, so --full
+// can stat that artifact instead of exporting a second time.
+const built = new Map();
+
 function fullBuild(id) {
   const sample = path.join(ROOT, 'catalog', 'recipes', id, 'sample', 'input.md');
   const defaults = path.join(ROOT, 'defaults', `${id}.yaml`);
-  const to = recipeTo(defaults);
-  const ext = to === 'docx' ? 'docx' : to.endsWith('.lua') ? 'zip' : 'pdf';
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), `recipe-${id}-`));
-  const outFile = path.join(tmp, `output.${ext}`);
-  execFileSync('pandoc', [sample, '--data-dir', ROOT, '--resource-path', path.dirname(sample), '--defaults', defaults, '-o', outFile], { stdio: 'pipe' });
+  const kind = outputKind(recipeTo(defaults));
+  const ext = kind === 'zip' ? 'zip' : kind === 'docx' ? 'docx' : 'pdf';
+  const outFile = built.get(id) ?? exportTo(id, sample, defaults, ext);
   const size = fs.existsSync(outFile) ? fs.statSync(outFile).size : 0;
   if (size <= 0) throw new Error('produced empty output');
   return size;

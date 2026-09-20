@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { checkDefaults } from './lib/invariants.mjs';
-import { parseDefaultsFile } from './lib/parse-defaults.mjs';
+import { parseDefaultsFile, KNOWN_SYSTEM_DEPS } from './lib/parse-defaults.mjs';
 import { sha256File } from './lib/hash.mjs';
 import { isSemver } from './lib/version.mjs';
 import { loadRecipeManifests, loadAssetDocs, loadCslStyles, INTERNAL_DEFAULTS } from './lib/catalog.mjs';
@@ -74,6 +74,23 @@ function leafAsset(rel, type, tag, docs) {
     tier: 'core',
     reviewed: true,
   };
+}
+
+// System dependencies are normally DERIVED from the defaults yaml: a bare filter token
+// like `pandoc-crossref` means "the user must install this binary", and the plugin
+// prompts for it. A recipe that invokes such a binary indirectly — e.g. through a Lua
+// shim calling pandoc.utils.run_json_filter — has no bare token to derive from, so its
+// recipe.yaml declares the dependency explicitly and we merge the two. Only names the
+// toolchain actually knows are accepted, so a typo fails the build instead of silently
+// producing a prompt for a binary that does not exist.
+function systemDeps(id, parsed, manifest, errors) {
+  const declared = manifest?.systemDeps ?? [];
+  for (const dep of declared) {
+    if (!KNOWN_SYSTEM_DEPS.has(dep)) {
+      errors.push(`recipe ${id}: unknown systemDeps entry "${dep}" (known: ${[...KNOWN_SYSTEM_DEPS].join(', ')})`);
+    }
+  }
+  return [...new Set([...parsed.systemDeps, ...declared])];
 }
 
 export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
@@ -143,7 +160,7 @@ export function buildIndex({ tag = '0.0.0', strict = false } = {}) {
       url: rawUrl(rel, tag),
       sha256: sha256File(abs(rel)),
       requires,
-      systemDeps: parsed.systemDeps,
+      systemDeps: systemDeps(id, parsed, manifest, errors),
       extraFiles,
       tier: manifest?.tier ?? 'core',
       reviewed: manifest?.tier === 'community' ? Boolean(manifest?.reviewed) : true,

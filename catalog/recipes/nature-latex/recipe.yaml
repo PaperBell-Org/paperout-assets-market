@@ -14,6 +14,11 @@ description:
     外加所配的文档类与参考文献样式。默认双倍行距加行号的送审形态，用
     pdflatex + bibtex 编译。
 tier: core
+# pandoc-crossref 是通过 filters/crossref-latex.lua 的 run_json_filter 间接调用的
+# （见那个文件的头注释：直接写 `pandoc-crossref` 会让它认不出输出格式）。yaml 里
+# 没有裸 token 可供推导，所以在这里显式声明，插件才会提示用户安装它。
+systemDeps:
+  - pandoc-crossref
 extraFiles:
   - templates/nature/sn-jnl.cls
   - templates/nature/bst/sn-nature.bst

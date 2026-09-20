@@ -7,9 +7,16 @@
   !!
   !!     to: ${USERDATA}/filters/latex-submission.lua
   !!
-  !! 放在 filters/ 只是因为 scripts/build-index.mjs 只扫 filters/*.lua、
-  !! templates/*.{tex,latex,sty,docx} 和 csl/*.csl 三处 —— .lua 放别的目录不会成为
-  !! leaf asset，也就无法被插件下载。副作用是能顺带吃到 luacheck 和 scan-security 两道检查。
+  !! 为什么住在 filters/ 而不是新建 writers/：build-index.mjs 给这个目录里的东西打的
+  !! type 是 "filter"，所以 index.json 里本文件的类型其实是错的 —— 这是已知的、有意的
+  !! 取舍。教工具链认识 writers/ 只是六处单行改动（build-index、pack-bundle、
+  !! parse-defaults、scan-security、validate.yml、CONTRIBUTING），真正的阻碍在仓库外：
+  !! index.json 是 schemaVersion: 1，新增一个 type: "writer" 会直接送到闭源插件面前，
+  !! 而插件是否对未知 type 宽容、无从在本仓库验证。等确认插件能容忍（或 schema 升版）
+  !! 再搬，搬的时候记得 pack-bundle 的 includeAll 目录列表也要加，否则 full 包会静默
+  !! 漏掉本文件。
+  !!
+  !! 附带好处：待在 filters/ 能顺带吃到 luacheck 和 scan-security 两道检查。
 
   产出：一个 zip（`output-file: submission.zip`），布局
 
@@ -63,9 +70,6 @@ local REFSTYLE_BST = {
   ['sn-chicago']       = 'sn-chicago',
 }
 
--- cls 要的名字 → 仓库里实际的文件名（只有 sn-APS 需要这层转换）。
-local BST_FILE = { ['sn-APS'] = 'sn-aps.bst' }
-
 local ADDRESS_FIELDS = { 'street', 'city', 'postcode', 'state', 'country' }
 
 -- ---------------------------------------------------------------- 小工具
@@ -74,8 +78,12 @@ local function warn(msg)
   io.stderr:write('[latex-submission] ' .. msg .. '\n')
 end
 
+-- 与 filters/manuscript-docx.lua 的同名函数保持一致（本仓库的 filter 之间没有模块
+-- 机制，scan-security 也禁止 require 本地文件，所以只能各留一份副本）。pcall 是必要的：
+-- pandoc 3.x 把 MetaBlocks 交给 Lua 时是一个没有 .t 字段的 Blocks 列表，直接判型会抛错。
 local function meta_type(val)
-  return pandoc.utils.type(val)
+  local ok, t = pcall(pandoc.utils.type, val)
+  return ok and t or nil
 end
 
 local function is_map(val)
@@ -150,21 +158,14 @@ end
 
 local function class_options(meta)
   local explicit = meta['sn-options']
-  local options = {}
 
-  if explicit ~= nil then
-    -- 作者整个接管了选项列表
-    for _, opt in ipairs(as_items(explicit)) do
-      local s = pandoc.utils.stringify(opt)
-      if s ~= '' then options[#options + 1] = s end
-    end
-  else
+  if explicit == nil then
     -- 默认：送审形态 —— 双倍行距 + 行号 + pdflatex + Nature 参考文献样式。
     -- lineno 沿用 lineno_default.lua 的约定：笔记里写 lineno: false 就关掉。
     local lineno = true
     if meta.lineno ~= nil then
-      local s = pandoc.utils.stringify(meta.lineno):lower()
-      lineno = not (s == 'false' or s == 'no' or s == '')
+      local str = pandoc.utils.stringify(meta.lineno):lower()
+      lineno = not (str == 'false' or str == 'no' or str == '')
     end
 
     local refstyle = DEFAULT_REFSTYLE
@@ -176,10 +177,18 @@ local function class_options(meta)
       refstyle = DEFAULT_REFSTYLE
     end
 
-    options[#options + 1] = 'referee'
+    local options = { 'referee' }
     if lineno then options[#options + 1] = 'lineno' end
     options[#options + 1] = 'pdflatex'
     options[#options + 1] = refstyle
+    return options, REFSTYLE_BST[refstyle]
+  end
+
+  -- 作者整个接管了选项列表
+  local options = {}
+  for _, opt in ipairs(as_items(explicit)) do
+    local str = pandoc.utils.stringify(opt)
+    if str ~= '' then options[#options + 1] = str end
   end
 
   local style = refstyle_in(options)
@@ -237,17 +246,37 @@ local function collect_meta_cites(val, seen, order)
   if str ~= '' then collect_cite_ids(pandoc.read(str, 'markdown'), seen, order) end
 end
 
+-- biblatex writer 的输出 → 经典 BibTeX 能读的 .bib。
+--
+-- 只改 date → year：BibTeX 不认 `date =`，而 biblatex writer 不写 `year =`。
+-- 其余 biblatex 专有**字段**（urldate、eprinttype 等）BibTeX 直接忽略，无害。
+-- 注意这不是「唯一的不兼容」—— biblatex 专有**条目类型**（@online、@thesis）
+-- 经典 .bst 是不认的，遇到会整条丢掉。本手稿类用到的条目类型没有这个问题，
+-- 真碰上了要在这里扩展。
+local function biblatex_to_bibtex(bib)
+  return (bib:gsub('(\n%s*)date(%s*=%s*{)(%d%d%d%d)[^}]*(})', '%1year%2%3%4'))
+end
+
 local function build_bibliography(doc)
   -- pandoc.utils.references() 读 doc.meta.bibliography 指向的文件（以及内联的
   -- references:），并且**只返回正文引用到的 + nocite 的条目** —— 未被引用的自动丢弃，
   -- 不需要自己按 key 过滤。这正是本 recipe 要的"只抽被引条目"。
   local refs = pandoc.utils.references(doc)
 
+  -- nocite 单独收一份：它既要参与「拼错的 key」告警，又要原样发成 \nocite{}。
+  local nseen, norder = {}, {}
+  collect_meta_cites(doc.meta.nocite, nseen, norder)
+
   -- 拼错的 key 在 citeproc 链里会渲染成 [?]，但在 natbib 链里是悄无声息地从 .bib 里
   -- 消失、正文留一个 (?) —— 必须在导出当时就喊出来。
   local seen, order = {}, {}
   collect_cite_ids(pandoc.Pandoc(doc.blocks), seen, order)
-  collect_meta_cites(doc.meta.nocite, seen, order)
+  for _, id in ipairs(norder) do
+    if not seen[id] then
+      seen[id] = true
+      order[#order + 1] = id
+    end
+  end
 
   local resolved = {}
   for _, ref in ipairs(refs) do resolved[ref.id] = true end
@@ -265,8 +294,6 @@ local function build_bibliography(doc)
   -- citeproc 填的，而本链不跑 citeproc —— 不自己填的话，nocite 的条目虽然进了
   -- references.bib，BibTeX 却因为没人 \cite 而把它丢掉。
   local nocite = {}
-  local nseen, norder = {}, {}
-  collect_meta_cites(doc.meta.nocite, nseen, norder)
   for _, id in ipairs(norder) do
     if resolved[id] then nocite[#nocite + 1] = id end
   end
@@ -275,11 +302,8 @@ local function build_bibliography(doc)
 
   -- 走 biblatex writer 而不是 bibtex writer：bibtex writer 会把 doi 丢掉
   -- （只留 author/title/journal/year），而 sn-nature.bst 是用 doi 的。
-  -- biblatex writer 字段齐全，唯一不兼容的是它写 `date =` 而 BibTeX 只认 `year =`，
-  -- 下面一行正则把年份收回来；其余 biblatex 专有字段 BibTeX 直接忽略，无害。
-  local bib = pandoc.write(pandoc.Pandoc({}, pandoc.Meta { references = refs }), 'biblatex')
-  bib = bib:gsub('(\n%s*)date(%s*=%s*{)(%d%d%d%d)[^}]*(})', '%1year%2%3%4')
-  return bib, nocite
+  return biblatex_to_bibtex(
+    pandoc.write(pandoc.Pandoc({}, pandoc.Meta { references = refs }), 'biblatex')), nocite
 end
 
 -- ------------------------------------------------------------- 3. 图片
@@ -359,9 +383,11 @@ local function collect_figures(doc)
       if taken[target] then
         -- 不同目录下的同名文件：加计数后缀，别互相覆盖
         local base, ext = pandoc.path.split_extension(name)
-        local n = 2
-        while taken[('figures/%s_%d%s'):format(base, n, ext)] do n = n + 1 end
-        target = ('figures/%s_%d%s'):format(base, n, ext)
+        local n = 1
+        repeat
+          n = n + 1
+          target = ('figures/%s_%d%s'):format(base, n, ext)
+        until not taken[target]
       end
 
       taken[target] = true
@@ -373,92 +399,6 @@ local function collect_figures(doc)
   }
 
   return doc, files
-end
-
--- ----------------------------------------- 3.5 收拾 pandoc-crossref 的 LaTeX 退化
-
---[[
-  pandoc-crossref 靠 FORMAT 判断输出格式。我们的 FORMAT 是本文件的**路径**
-  （实测：FORMAT=[…/filters/latex-submission.lua]），它永远认不出这是 LaTeX，
-  于是退回通用行为，做了两件对投稿源文件有害的事：
-
-    1. 把「Figure 1: 」烤进 caption —— 而 \caption 自己还会再排一次 "Fig. 1"，
-       编译出来是 "Fig. 1 Figure 1: 标题"。
-    2. 把交叉引用烤成死文本 "Figure 1" —— 期刊重排图序后就全错了。
-
-  crossref 没有强制格式的开关（实测 -M format / crossrefFormat / outputFormat
-  都无效），所以只能在这里收拾回来。pandoc 自己的 latex writer 已经为带
-  {#fig:x} 的图表发了真 \label，所以恢复 \ref 之后编号是活的。
-
-  两个动作都是「匹配不上就原样不动」，最坏情况退回现状，不会把文档改坏。
---]]
-
--- caption 被烤成 [Str "Figure", Space, Str "1:", Space, <原文…>]。
--- 认出前四个元素就砍掉，认不出就整条不动。
-local function strip_caption_prefix(blocks, titles)
-  return blocks:walk {
-    Plain = function(p)
-      local c = p.content
-      if #c < 4 then return nil end
-      if c[1].t ~= 'Str' or not titles[c[1].text] then return nil end
-      if c[2].t ~= 'Space' or c[4].t ~= 'Space' then return nil end
-      -- "1:" / "2.3:" / "S1:" —— 编号加 titleDelim，delim 也可能被设成空
-      if c[3].t ~= 'Str' or not c[3].text:match('^[%w%.%-]+%p?$') then return nil end
-      local rest = pandoc.List({})
-      for i = 5, #c do rest:insert(c[i]) end
-      return pandoc.Plain(rest)
-    end,
-  }
-end
-
-local function crossref_titles(meta)
-  local titles = {}
-  for _, key in ipairs { 'figureTitle', 'tableTitle', 'listingTitle' } do
-    if meta[key] ~= nil then titles[pandoc.utils.stringify(meta[key])] = true end
-  end
-  -- crossref 的内置默认值，笔记没覆盖时也要认得出
-  titles.Figure = true
-  titles.Table = true
-  titles.Listing = true
-  return titles
-end
-
-local function undo_crossref(doc)
-  local titles = crossref_titles(doc.meta)
-
-  local function fix(caption)
-    if caption.long and #caption.long > 0 then
-      caption.long = strip_caption_prefix(caption.long, titles)
-    end
-    return caption
-  end
-
-  return doc:walk {
-    -- linkReferences: true 让 crossref 把编号包进 Link（target "#fig:x"）。
-    -- 换成真 \ref{} —— 前缀词（"Figure~"）在 Link 外面，原样保留。
-    Link = function(l)
-      local id = l.target:match('^#(.+)$')
-      if id then return pandoc.RawInline('latex', '\\ref{' .. id .. '}') end
-      return nil
-    end,
-    -- 带 {#eq:x} 的公式在通用模式下被写成
-    --   \protect\phantomsection\label{eq:x}{\[ … \qquad{(1)} \]}
-    -- 两处都错：\[ \] 是不编号的行间公式，编号 "(1)" 是 crossref 拿 \qquad 假装的；
-    -- 而 \label 落在公式环境外面，\ref 抓到的是上一个用过的计数器（实测串到表号）。
-    -- 换成真正的 equation 环境，编号和 \ref 就都由 LaTeX 管了。
-    Span = function(sp)
-      if sp.identifier == '' or #sp.content ~= 1 then return nil end
-      local m = sp.content[1]
-      if m.t ~= 'Math' or m.mathtype ~= 'DisplayMath' then return nil end
-      -- 去掉 crossref 假装的编号，再把首尾空白削干净 —— 公式体首行若留一个空行，
-      -- equation 环境会当成段落结束，编译报 "Missing $ inserted"。
-      local body = m.text:gsub('%s*\\qquad%s*{%b()}%s*$', ''):gsub('^%s+', ''):gsub('%s+$', '')
-      return pandoc.RawInline('latex',
-        '\\begin{equation}\\label{' .. sp.identifier .. '}\n' .. body .. '\n\\end{equation}')
-    end,
-    Figure = function(f) f.caption = fix(f.caption); return f end,
-    Table = function(t) t.caption = fix(t.caption); return t end,
-  }
 end
 
 -- --------------------------------------------------------- 4. 抬头（title block）
@@ -514,7 +454,9 @@ local function author_macro(a)
   if email then line = line .. '\\email{' .. email .. '}' end
   if equal then line = line .. '\n\\equalcont{' .. equal .. '}' end
 
-  return line, affils
+  -- 第二个返回值 = 要跟着带 * 的机构编号。让「这位是不是通讯作者」只在这里判一次，
+  -- 调用方不必再照着重算一遍同样的规则。
+  return line, corresponding and affils or nil
 end
 
 local function affil_macro(aff, index, starred)
@@ -553,12 +495,10 @@ local function title_block(meta)
   local starred = {}   -- 通讯作者所在的机构编号 → 该机构要带 *
 
   for _, a in ipairs(authors) do
-    local line, affils = author_macro(a)
+    local line, starred_affils = author_macro(a)
     if line then
       lines[#lines + 1] = line
-      if is_map(a) and a.corresponding and a.corresponding ~= false then
-        for _, n in ipairs(affils) do starred[n] = true end
-      end
+      for _, n in ipairs(starred_affils or {}) do starred[n] = true end
     end
   end
 
@@ -578,6 +518,45 @@ local function title_block(meta)
   return table.concat(lines, '\n')
 end
 
+-- ------------------------------------------------------------------ 5. zip
+
+-- 把渲染好的各部分装进 zip。sn-jnl.cls 和 .bst 一并打包，作者拿到 zip 就能编译，
+-- 期刊那边也不必自己去凑文档类。
+local function build_zip(tex, bib, bst_name, figures)
+  local assets = pandoc.path.join { asset_dir(), ASSET_SUBDIR }
+  local archive = pandoc.zip.Archive()
+
+  local function add(path, contents)
+    -- modtime 固定为 0（1980-01-01），否则同样的输入每次导出都是不同的 zip，
+    -- golden fingerprint 就永远对不上
+    archive.entries[#archive.entries + 1] = pandoc.zip.Entry(path, contents, 0)
+  end
+
+  add('main.tex', tex)
+  if bib then add('references.bib', bib) end
+
+  local cls = read_file(pandoc.path.join { assets, 'sn-jnl.cls' })
+  if cls then
+    add('sn-jnl.cls', cls)
+  else
+    warn('sn-jnl.cls not found in ' .. assets .. ' — the zip will not compile on its own')
+  end
+
+  -- 仓库里的文件名一律小写，cls 要的名字不一定（sn-APS ↔ sn-aps.bst）
+  local bst = read_file(pandoc.path.join { assets, 'bst', bst_name:lower() .. '.bst' })
+  if bst then
+    add(bst_name .. '.bst', bst)
+  else
+    warn(('%s.bst not found in %s/bst — bibtex will fail'):format(bst_name, assets))
+  end
+
+  -- 条目顺序固定，同样是为了 zip 可复现
+  table.sort(figures, function(x, y) return x.path < y.path end)
+  for _, f in ipairs(figures) do add(f.path, f.data) end
+
+  return archive:bytestring()
+end
+
 -- ------------------------------------------------------------------ writer
 
 function ByteStringWriter(doc, opts)
@@ -590,9 +569,6 @@ function ByteStringWriter(doc, opts)
   -- 3 ──────────────────────────────────── 图片（必须先于渲染 LaTeX）
   local figures
   doc, figures = collect_figures(doc)
-
-  -- 3.5 ──────────────── 把 pandoc-crossref 烤死的 caption 前缀和交叉引用救回来
-  doc = undo_crossref(doc)
 
   -- 4 ──────────────────────────────────────────────────────── main.tex
   doc.meta['sn-options'] = pandoc.MetaString(table.concat(options, ','))
@@ -619,45 +595,14 @@ function ByteStringWriter(doc, opts)
   end
 
   if #nocite > 0 then
-    local ids = pandoc.List({})
-    for _, id in ipairs(nocite) do ids:insert(pandoc.MetaString(id)) end
-    doc.meta['nocite-ids'] = pandoc.MetaList(ids)
+    doc.meta['nocite-ids'] = pandoc.MetaList(pandoc.List(nocite):map(pandoc.MetaString))
   end
   doc.meta.nocite = nil
 
   local tex = pandoc.write(doc, 'latex', opts)
 
   -- 5 ─────────────────────────────────────────────────────────────── zip
-  local assets = pandoc.path.join { asset_dir(), ASSET_SUBDIR }
-  local archive = pandoc.zip.Archive()
-
-  local function add(path, contents)
-    -- modtime 固定为 0（1980-01-01），否则同样的输入每次导出都是不同的 zip，
-    -- golden fingerprint 就永远对不上
-    archive.entries[#archive.entries + 1] = pandoc.zip.Entry(path, contents, 0)
-  end
-
-  add('main.tex', tex)
-  if bib then add('references.bib', bib) end
-
-  local cls = read_file(pandoc.path.join { assets, 'sn-jnl.cls' })
-  if cls then
-    add('sn-jnl.cls', cls)
-  else
-    warn('sn-jnl.cls not found in ' .. assets .. ' — the zip will not compile on its own')
-  end
-
-  local bst = read_file(pandoc.path.join { assets, 'bst', BST_FILE[bst_name] or (bst_name .. '.bst') })
-  if bst then
-    add(bst_name .. '.bst', bst)
-  else
-    warn(('%s.bst not found in %s/bst — bibtex will fail'):format(bst_name, assets))
-  end
-
-  table.sort(figures, function(x, y) return x.path < y.path end)
-  for _, f in ipairs(figures) do add(f.path, f.data) end
-
-  return archive:bytestring()
+  return build_zip(tex, bib, bst_name, figures)
 end
 
 -- standalone: true 且没给 --template 时，pandoc 会直接报 "No template defined"。

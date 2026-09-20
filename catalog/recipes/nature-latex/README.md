@@ -115,7 +115,9 @@ something closer to the typeset article, set `sn-options: [pdflatex, sn-nature]`
   stderr during export — worth reading, because in a BibTeX chain a bad key does not show
   up as `[?]`, it just silently disappears from the reference list.
 - **Live cross-references.** `[@fig:basin]` becomes `\ref{fig:basin}`, not a frozen
-  "Figure 1", so the numbering survives the journal reflowing your figures.
+  "Figure 1", so the numbering survives the journal reflowing your figures. This needs
+  `filters/crossref-latex.lua` in the chain rather than the bare `pandoc-crossref`
+  token — see that file's header for why.
 - **Figures renamed for LaTeX.** `流域 示意图.png` becomes `figures/basin.png` (the
   crossref id is used when the original name has no usable ASCII left). The same image
   cited twice is packed once.

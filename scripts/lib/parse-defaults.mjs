@@ -27,6 +27,19 @@ export function isPortableRef(ref) {
   return s.startsWith('${USERDATA}/') || s.startsWith('${.}/');
 }
 
+/**
+ * True if a value looks like a resource path rather than a bare name.
+ *
+ * Deliberately looser than isPortableRef(): a machine-absolute `to:` or filter entry
+ * must still reach rawRefs so `checkDefaults` can reject it (invariant #2). Gate on
+ * portability here and a non-portable reference is silently ignored instead of failing
+ * the build — exactly the bug that invariant exists to catch.
+ */
+export function looksLikePath(value) {
+  const s = String(value).trim();
+  return s.includes('/') || s.includes('$');
+}
+
 /** Strip a portable prefix, returning the repo-relative path (or the input trimmed). */
 export function stripVar(ref) {
   return String(ref).trim().replace(USERDATA_PREFIX, '').replace(DOTDOT_PREFIX, '');
@@ -68,7 +81,7 @@ export function parseDefaults(yamlText) {
   // plugin, so the recipe arrives broken. Only treat it as a path when it looks like
   // one; a bare format name stays a format name (it is NOT a system dep).
   const to = typeof doc.to === 'string' ? doc.to.trim() : '';
-  if (to && (to.includes('/') || to.includes('$'))) refToRequire(to, requires, rawRefs);
+  if (to && looksLikePath(to)) refToRequire(to, requires, rawRefs);
 
   // filters list: portable refs → files; bare tokens → system deps
   const filters = Array.isArray(doc.filters) ? doc.filters : [];
@@ -79,7 +92,7 @@ export function parseDefaults(yamlText) {
     if (!s) continue;
     if (isPortableRef(s)) {
       refToRequire(s, requires, rawRefs);
-    } else if (!s.includes('/') && !s.includes('$')) {
+    } else if (!looksLikePath(s)) {
       systemDeps.add(s); // citeproc, pandoc-crossref, ...
     }
   }

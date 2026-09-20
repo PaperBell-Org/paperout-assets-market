@@ -529,13 +529,11 @@ filters/latex-submission.lua:
       that emits a Springer Nature submission package as a zip: main.tex, a
       references.bib subset holding only the cited entries, each figure as a file
       with a LaTeX-safe name, the sn-jnl class and the .bst the chosen reference
-      style needs. Also restores real \\label/\\ref cross-references that
-      pandoc-crossref degrades when it cannot recognise the output format."
+      style needs."
     zh: 自定义 Pandoc writer（不是 filter —— 它写在 `to:`，绝不能放进 `filters:`），
       把手稿打成 Springer Nature 投稿包 zip：main.tex、只含被引条目的
       references.bib、逐张独立且文件名已净化的图片、sn-jnl 文档类和所选样式对应的
-      .bst。同时把 pandoc-crossref 因认不出输出格式而烤死的交叉引用还原成真正的
-      \\label/\\ref。
+      .bst。
 templates/nature-latex.latex:
   version: 1.0.0
   title:
@@ -550,3 +548,19 @@ templates/nature-latex.latex:
       模板派生并把六个 partial 全部内联展平。负责排出 SN 的抬头
       （\author*/\affil*/\abstract/\keywords）；natbib 与 \bibliographystyle 交给
       文档类自己加载，模板不碰。
+filters/crossref-latex.lua:
+  version: 1.0.0
+  title:
+    en: pandoc-crossref LaTeX shim
+    zh: pandoc-crossref LaTeX 适配层
+  description:
+    en: "Runs pandoc-crossref with the output format pinned to latex. Pandoc hands a
+      filter the target format as its first argument, and for a custom Lua writer that
+      string is the writer's file path — so pandoc-crossref cannot tell the target is
+      LaTeX and degrades: it bakes figure numbers into captions and freezes
+      cross-references into dead text. Use this in place of the bare `pandoc-crossref`
+      filter token on any chain whose `to:` is a Lua writer."
+    zh: "以固定为 latex 的输出格式运行 pandoc-crossref。pandoc 把目标格式当作第一个参数
+      传给 filter，而当 `to:` 指向自定义 Lua writer 时，这个字符串是 writer 的文件路径
+      —— pandoc-crossref 认不出目标是 LaTeX 而退化：把图号烤进题注、把交叉引用冻成死
+      文本。凡是 `to:` 为 Lua writer 的链，都用本文件替代裸的 `pandoc-crossref` token。"

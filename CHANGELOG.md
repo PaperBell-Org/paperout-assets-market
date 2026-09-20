@@ -30,16 +30,25 @@ source away.
   and `sn-nature.bst` uses it. Citation keys that resolve to nothing are reported on
   stderr — in a BibTeX chain a bad key does not render as `[?]`, it silently vanishes.
 
-- **Cross-references stay live.** `pandoc-crossref` decides how to behave from `FORMAT`,
-  which for a custom writer is the writer's *path* — so it never recognises this as LaTeX
-  and degrades: it bakes `Figure 1: ` into captions (which `\caption` then repeats),
+- **New `filters/crossref-latex.lua`** (1.0.0), and cross-references stay live because of
+  it. `pandoc-crossref` decides how to behave from the target format Pandoc passes it as
+  `argv[1]`, which for a custom writer is the writer's *path* — so it never recognises
+  LaTeX and degrades: it bakes `Figure 1: ` into captions (which `\caption` then repeats),
   freezes `[@fig:x]` into the literal text `Figure 1`, and fakes equation numbers with
   `\qquad{(1)}` while putting `\label` outside the equation, where `\ref` picks up the
-  wrong counter. There is no way to tell crossref the format (`-M format`,
-  `crossrefFormat`, `outputFormat` all tested, none work), so the writer undoes all three:
-  it strips the caption prefix, turns crossref's `linkReferences` links back into real
-  `\ref{}`, and rebuilds `{#eq:x}` display math as a proper `equation` environment. Every
-  step no-ops when the pattern does not match.
+  wrong counter. No metadata key overrides this (`-M format`, `crossrefFormat` and
+  `outputFormat` were all tested). The shim runs crossref through
+  `pandoc.utils.run_json_filter(doc, 'pandoc-crossref', {'latex'})`, pinning that argument,
+  and crossref then emits correct `\caption{}`, `\ref{}` and `equation` environments
+  natively. Use it in place of the bare `pandoc-crossref` token on any chain whose `to:`
+  is a Lua writer.
+
+- **`scripts/build-index.mjs` learns an explicit `systemDeps` in `recipe.yaml`.** System
+  dependencies are normally derived from a bare filter token, which is what tells the
+  plugin to prompt for the `pandoc-crossref` install. Invoking it through the shim removes
+  that token, so the prompt would have silently disappeared; the recipe now declares the
+  dependency and the two sets are merged. Unknown names fail the build rather than
+  producing a prompt for a binary that does not exist.
 
 - **New `templates/nature-latex.latex`** (1.0.0), derived from Pandoc's default LaTeX
   template with all six partials **inlined**. Inlining is not tidiness: partials resolve
