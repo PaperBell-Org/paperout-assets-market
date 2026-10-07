@@ -1,5 +1,5 @@
 id: nature-latex
-version: 2.0.1
+version: 3.0.0
 title:
   en: Nature-LaTeX (submission sources)
   zh: Nature-LaTeX（投稿源文件）
@@ -20,6 +20,10 @@ tier: core
 systemDeps:
   - pandoc-crossref
 extraFiles:
+  # 内嵌文献表用它渲染（见 writers/latex-submission.lua 的 DEFAULT_EMBED_CSL）。
+  # defaults 里的 csl: 是注释掉的 —— 本链不跑 citeproc 走正文引文，所以这条依赖
+  # 推导不出来，必须显式声明，否则按 recipe 安装的用户拿不到它，内嵌会静默回落。
+  - csl/nature.csl
   - templates/nature/sn-jnl.cls
   - templates/nature/bst/sn-nature.bst
   - templates/nature/bst/sn-basic.bst

@@ -13,10 +13,11 @@
 
   产出：一个 zip（`output-file: submission.zip`），布局
 
-      main.tex          正文，\documentclass{sn-jnl}，单文件，无 \input
-      references.bib    只含本文引用到的条目
+      main.tex          正文，\documentclass{sn-jnl}，单文件，无 \input，
+                        文献表以 thebibliography 内嵌（默认）
+      references.bib    只含本文引用到的条目。内嵌时 main.tex 不读它，仍然打包
       sn-jnl.cls        Springer Nature 文档类（LPPL）
-      <style>.bst       当前参考文献样式对应的那一个
+      <style>.bst       仅在 embed-bibliography: false 时打包
       figures/<名字>    所有被引用的图，文件名已净化
 
   之所以 pandoc 一次调用就能吐 zip：pandoc 3.x 的自定义 writer 支持二进制输出
@@ -150,7 +151,10 @@ local function refstyle_in(options)
   return nil
 end
 
--- frontmatter 的布尔值归一，和 filters/lineno_default.lua 的规则一致。
+-- frontmatter 的布尔值归一。规则与 filters/lineno_default.lua、
+-- filters/nature-latex-layout.lua 逐字一致（黑名单：除 false/no/0/off/空 皆真，
+-- 适合默认开的开关）。注意 filters/preamble.lua 的同名函数是**白名单**语义
+-- （只认 true/yes/1/on，适合默认关的开关）—— 同名不同义，改任何一处都要看另外三处。
 local function truthy(v)
   if v == nil then return false end
   local str = pandoc.utils.stringify(v):lower():gsub('%s+', '')
@@ -259,22 +263,35 @@ local function biblatex_to_bibtex(bib)
   return (bib:gsub('(\n%s*)date(%s*=%s*{)(%d%d%d%d)[^}]*(})', '%1year%2%3%4'))
 end
 
-local function build_bibliography(doc)
-  -- pandoc.utils.references() 读 doc.meta.bibliography 指向的文件（以及内联的
-  -- references:），并且**只返回正文引用到的 + nocite 的条目** —— 未被引用的自动丢弃，
-  -- 不需要自己按 key 过滤。这正是本 recipe 要的"只抽被引条目"。
-  local refs = pandoc.utils.references(doc)
-
-  -- nocite 单独收一份：它既要参与「拼错的 key」告警，又要原样发成 \nocite{}。
-  local nseen, norder = {}, {}
-  collect_meta_cites(doc.meta.nocite, nseen, norder)
-
-  -- 拼错的 key 在 citeproc 链里会渲染成 [?]，但在 natbib 链里是悄无声息地从 .bib 里
-  -- 消失、正文留一个 (?) —— 必须在导出当时就喊出来。
+-- 正文里引用 key 的首次出现顺序，nocite 的补在最后（它们不在正文里）。
+-- sn-nature.bst 没有 SORT 命令 —— 它按 .aux 里 \\citation 的顺序给文献编号。
+-- 所以文献表必须按这个顺序排，否则 [1] 指的不是第一个被引用的文献。
+local function citation_order(doc)
   local seen, order = {}, {}
   collect_cite_ids(pandoc.Pandoc(doc.blocks), seen, order)
-  for _, id in ipairs(norder) do push_id(seen, order, id) end
+  collect_meta_cites(doc.meta.nocite, seen, order)
+  return order
+end
 
+-- 把 refs 排成首次引用顺序。order 里没有的（理论上不会有，references() 只返回被引的）
+-- 挂在尾部，保持稳定。
+local function sort_by_citation_order(refs, order)
+  local rank = {}
+  for i, id in ipairs(order) do rank[id] = i end
+
+  local sorted = {}
+  for _, ref in ipairs(refs) do sorted[#sorted + 1] = ref end
+  table.sort(sorted, function(a, b)
+    local ra, rb = rank[a.id] or math.huge, rank[b.id] or math.huge
+    if ra ~= rb then return ra < rb end
+    return tostring(a.id) < tostring(b.id)
+  end)
+  return sorted
+end
+
+local function build_bibliography(doc, refs, order)
+  -- 拼错的 key 在 citeproc 链里会渲染成 [?]，但在 natbib 链里是悄无声息地从 .bib 里
+  -- 消失、正文留一个 (?) —— 必须在导出当时就喊出来。
   local resolved = {}
   for _, ref in ipairs(refs) do resolved[ref.id] = true end
 
@@ -287,9 +304,11 @@ local function build_bibliography(doc)
       .. table.concat(missing, ', @'))
   end
 
-  -- \nocite{} 的 key：只进参考文献、正文不出现。pandoc 的 nocite-ids 模板变量是
+  -- \\nocite{} 的 key：只进参考文献、正文不出现。pandoc 的 nocite-ids 模板变量是
   -- citeproc 填的，而本链不跑 citeproc —— 不自己填的话，nocite 的条目虽然进了
-  -- references.bib，BibTeX 却因为没人 \cite 而把它丢掉。
+  -- references.bib，BibTeX 却因为没人 \\cite 而把它丢掉。
+  local nseen, norder = {}, {}
+  collect_meta_cites(doc.meta.nocite, nseen, norder)
   local nocite = {}
   for _, id in ipairs(norder) do
     if resolved[id] then nocite[#nocite + 1] = id end
@@ -298,9 +317,86 @@ local function build_bibliography(doc)
   if #refs == 0 then return nil, nocite end
 
   -- 走 biblatex writer 而不是 bibtex writer：bibtex writer 会把 doi 丢掉
-  -- （只留 author/title/journal/year），而 sn-nature.bst 是用 doi 的。
+  -- （只留 author/title/journal/year）。注意 sn-nature.bst 对 @article 其实不印 doi，
+  -- 但别的 sn-*.bst 会，而这份 .bib 也可能被作者拿去别处用，所以留着字段更稳。
   return biblatex_to_bibtex(
     pandoc.write(pandoc.Pandoc({}, pandoc.Meta { references = refs }), 'biblatex')), nocite
+end
+
+-- ------------------------------------- 2.5 把文献表内嵌进 .tex
+
+local CSL_SUBDIR = 'csl'
+local DEFAULT_EMBED_CSL = 'nature.csl'
+
+--[[
+  生成一段 thebibliography，直接放进 main.tex，这样投稿包就是真正的单文件：
+  不需要 references.bib、不需要 .bst、不需要跑 BibTeX，只要 xelatex ×2。
+
+  Nature Portfolio 走 eJP 投稿时，Springer Nature 自己的模板就明说要这么做 ——
+  把 .bbl 的内容粘回 .tex 并删掉 \bibliography 命令。
+
+  writer 跑不了 BibTeX（也不该跑：scan-security 的用意就是不让过滤器执行外部命令），
+  所以这里改用 pandoc 的 citeproc 配 csl/nature.csl 渲染，再包成 \bibitem。
+  实测与 sn-nature.bst 的排版实质等效 —— 同一条文献两边都排成
+    Roediger, H. L. & Abel, M. Collective memory: {A} new arena of cognitive
+    study. \emph{Trends in Cognitive Sciences} \textbf{19}, 359--361 (2015).
+  差别只在 .bst 会多包一层 \bibinfo{} 语义标记（给 production 转 XML 用，不影响排版）。
+
+  link-bibliography = false 是必须的：不关掉，citeproc 会把标题整个做成 DOI 超链接，
+  那就和 .bst 的排版不一样了。
+
+  只认 Nature 样式 —— 仓库里的 CSL 只有 apa/nature/pnas。选了别的 sn-refstyle 时
+  不内嵌，回到标准 BibTeX 流程（见 ByteStringWriter 里的告警）。
+--]]
+local function embed_bibliography(refs)
+  -- 和 cls/bst 一样先探一下文件在不在：recipe.yaml 的 extraFiles 必须声明
+  -- csl/nature.csl，否则按 recipe 安装的用户根本没有它。少了这个探测，
+  -- 唯一的症状就是下面 pcall 吐出的一行 citeproc 报错。
+  local csl_path = pandoc.path.join { asset_dir(), CSL_SUBDIR, DEFAULT_EMBED_CSL }
+  if not read_file(csl_path) then
+    warn(('%s not found in %s — cannot embed the bibliography, keeping references.bib + BibTeX')
+      :format(DEFAULT_EMBED_CSL, pandoc.path.join { asset_dir(), CSL_SUBDIR }))
+    return nil
+  end
+
+  local probe = pandoc.Pandoc({}, pandoc.Meta {
+    references = refs,
+    -- @* = 全部收进文献表。手搓 Cite 元素 citeproc 不认，必须是这个通配形式。
+    nocite = pandoc.MetaInlines { pandoc.Cite({ pandoc.Str('@*') },
+      { pandoc.Citation('*', 'NormalCitation') }) },
+    ['link-bibliography'] = false,
+    csl = pandoc.MetaString(csl_path),
+  })
+
+  local ok, done = pcall(pandoc.utils.citeproc, probe)
+  if not ok then
+    warn('could not render the bibliography for embedding (' .. tostring(done)
+      .. ') — falling back to references.bib + BibTeX')
+    return nil
+  end
+
+  local items = {}
+  for _, blk in ipairs(done.blocks) do
+    if blk.t == 'Div' and blk.identifier == 'refs' then
+      for _, entry in ipairs(blk.content) do
+        local key = tostring(entry.identifier):gsub('^ref%-', '')
+        -- citeproc 的版式包装要剥掉：csl-left-margin 是它自己排的编号，
+        -- thebibliography 会再排一次；csl-right-inline 里才是文献正文。
+        local body = pandoc.Blocks(entry.content):walk {
+          Span = function(sp)
+            if sp.classes:includes('csl-left-margin') then return {} end
+            if sp.classes:includes('csl-right-inline') then return sp.content end
+          end,
+        }
+        local tex = pandoc.write(pandoc.Pandoc(body), 'latex'):gsub('%s+$', '')
+        items[#items + 1] = '\\bibitem{' .. key .. '}\n' .. tex
+      end
+    end
+  end
+
+  if #items == 0 then return nil end
+  return '\\begin{thebibliography}{' .. #items .. '}\n'
+    .. table.concat(items, '\n\n') .. '\n\\end{thebibliography}\n'
 end
 
 -- ------------------------------------------------------------- 3. 图片
@@ -668,7 +764,7 @@ end
 
 -- 把渲染好的各部分装进 zip。sn-jnl.cls 和 .bst 一并打包，作者拿到 zip 就能编译，
 -- 期刊那边也不必自己去凑文档类。
-local function build_zip(tex, bib, bst_name, figures)
+local function build_zip(tex, bib, bst_name, figures, embedded_note)
   local assets = pandoc.path.join { asset_dir(), ASSET_SUBDIR }
   local archive = pandoc.zip.Archive()
 
@@ -679,7 +775,14 @@ local function build_zip(tex, bib, bst_name, figures)
   end
 
   add('main.tex', tex)
-  if bib then add('references.bib', bib) end
+  if bib then
+    -- 内嵌时 main.tex 不引用这个文件，但仍然打包：合作者和 production 常要一份
+    -- 可导入的 .bib。在文件头写明，免得有人改了它却发现编译毫无变化。
+    local header = embedded_note and
+      '% Not read by main.tex — the reference list is embedded there.\n'
+      .. '% Kept for co-authors and for journals that ask for a .bib.\n\n' or ''
+    add('references.bib', header .. bib)
+  end
 
   local cls = read_file(pandoc.path.join { assets, 'sn-jnl.cls' })
   if cls then
@@ -689,11 +792,14 @@ local function build_zip(tex, bib, bst_name, figures)
   end
 
   -- 仓库里的文件名一律小写，cls 要的名字不一定（sn-APS ↔ sn-aps.bst）
-  local bst = read_file(pandoc.path.join { assets, 'bst', bst_name:lower() .. '.bst' })
-  if bst then
-    add(bst_name .. '.bst', bst)
-  else
-    warn(('%s.bst not found in %s/bst — bibtex will fail'):format(bst_name, assets))
+  -- 内嵌文献表时 bst_name 是 nil：不跑 BibTeX，.bst 就是多余文件，不打包。
+  if bst_name then
+    local bst = read_file(pandoc.path.join { assets, 'bst', bst_name:lower() .. '.bst' })
+    if bst then
+      add(bst_name .. '.bst', bst)
+    else
+      warn(('%s.bst not found in %s/bst — bibtex will fail'):format(bst_name, assets))
+    end
   end
 
   -- 条目顺序固定，同样是为了 zip 可复现
@@ -710,7 +816,11 @@ function ByteStringWriter(doc, opts)
   local options, bst_name = class_options(doc.meta)
 
   -- 2 ──────────────────────── references.bib（必须先于改写 doc.meta.bibliography）
-  local bib, nocite = build_bibliography(doc)
+  -- pandoc.utils.references() 靠 doc.meta.bibliography 找 bib 文件，所以必须在
+  -- 下面改写那个键之前跑。排成首次引用顺序，sn-nature.bst 就是按这个顺序编号的。
+  local order = citation_order(doc)
+  local refs = sort_by_citation_order(pandoc.utils.references(doc), order)
+  local bib, nocite = build_bibliography(doc, refs, order)
 
   -- 3 ──────────────────────────────────── 图片（必须先于渲染 LaTeX）
   local figures
@@ -719,10 +829,44 @@ function ByteStringWriter(doc, opts)
   -- 4 ──────────────────────────────────────────────────────── main.tex
   doc.meta['sn-options'] = pandoc.MetaString(table.concat(options, ','))
 
+  -- 内嵌文献表：默认开，一串 guard 从上到下读，每种情况一条。
+  local function decide_embedded()
+    if #refs == 0 then return nil end                       -- 没有文献可排
+
+    local opt = doc.meta['embed-bibliography']
+    if opt ~= nil and not truthy(opt) then return nil end    -- 笔记显式关掉，不必告警
+
+    -- 仓库里只有 Nature 样式的 CSL（csl/ 只有 apa/nature/pnas，其余是插件运行时取的，
+    -- writer 跑的时候不在盘上）。而且内嵌发的是裸 \\bibitem{}，只在 natbib 的
+    -- numeric 模式下成立 —— 换成 author-year 的 sn-* 样式会满篇 (?)。
+    -- 这个 guard 同时挡住这两件事。
+    if bst_name ~= 'sn-nature' then
+      warn(('reference style is %s — the embedded bibliography only works in Nature style, so keeping references.bib + BibTeX')
+        :format(bst_name))
+      return nil
+    end
+
+    return embed_bibliography(refs)   -- 渲染失败时它自己返回 nil 并告警
+  end
+
+  local embedded = decide_embedded()
+
+  -- 内嵌时不跑 BibTeX，.bst 就是多余文件，不打包。
+  -- 这里直接改 bst_name，而不是算一个 bst_for_zip：后者写成
+  -- `embedded and nil or bst_name` 会永远得到 bst_name（Lua 里 `真 and nil` 是 nil，
+  -- `nil or x` 又取 x），踩过一次。
+  if embedded then bst_name = nil end
+
   local floats
   doc, floats = relocate_floats(doc)
-  if floats then
-    doc.meta['include-after'] = pandoc.MetaBlocks { pandoc.RawBlock('latex', floats) }
+
+  -- 顺序要紧：SN 要的是 … References → Tables → Figures，所以文献表排在
+  -- 浮动区之前，两者一起走 include-after（模板里它在 \\bibliography{} 之后）。
+  local after = {}
+  if embedded then after[#after + 1] = embedded end
+  if floats then after[#after + 1] = floats end
+  if #after > 0 then
+    doc.meta['include-after'] = pandoc.MetaBlocks { pandoc.RawBlock('latex', table.concat(after, '\n')) }
   end
 
   -- 只有文档真含 CJK 时才声明中文字体，而且不覆盖笔记自己写的。
@@ -751,13 +895,17 @@ function ByteStringWriter(doc, opts)
   -- BibTeX 的 \bibliography{} 收的是**不带扩展名**的基名（和 biblatex 的
   -- \addbibresource{x.bib} 不同）。不改这一行，\bibliography{} 里会是用户机器上的
   -- 绝对路径，投出去必炸。
-  if bib then
+  if bib and not embedded then
     doc.meta.bibliography = pandoc.MetaList { pandoc.MetaString('references') }
   else
+    -- 内嵌时一定要清掉：留着模板就会再发一条 \\bibliography{}，
+    -- 和 thebibliography 撞成两份文献表。
     doc.meta.bibliography = nil
   end
 
-  if #nocite > 0 then
+  -- 内嵌时不发 \\nocite{}：文献表已经在 .tex 里，BibTeX 不参与，留着它只会让
+  -- 习惯性跑一遍 bibtex 的人撞上 "I found no \\bibdata command"。
+  if #nocite > 0 and not embedded then
     doc.meta['nocite-ids'] = pandoc.MetaList(pandoc.List(nocite):map(pandoc.MetaString))
   end
   doc.meta.nocite = nil
@@ -765,7 +913,7 @@ function ByteStringWriter(doc, opts)
   local tex = pandoc.write(doc, 'latex', opts)
 
   -- 5 ─────────────────────────────────────────────────────────────── zip
-  return build_zip(tex, bib, bst_name, figures)
+  return build_zip(tex, bib, bst_name, figures, embedded ~= nil)
 end
 
 -- standalone: true 且没给 --template 时，pandoc 会直接报 "No template defined"。

@@ -2,6 +2,50 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**The reference list is now written into `main.tex`.** The submission package compiles
+with two `xelatex` passes and nothing else — no `.bib`, no `.bst`, no BibTeX step.
+Springer Nature's own template asks for exactly this when submitting to a Nature Portfolio
+journal through eJP, and it was previously item 1 on this recipe's Known gaps list, to be
+done by hand after a local compile.
+
+A Lua writer cannot run BibTeX — and should not; the repo's security scan exists to stop
+filters executing external commands. So the list is rendered by Pandoc's citeproc through
+`csl/nature.csl`, the CSL style Nature publishes, and wrapped as `\bibitem` entries.
+`link-bibliography` has to be off, or citeproc turns every title into a DOI hyperlink.
+
+It is close to `sn-nature.bst`, not byte-identical: the `.bst` omits DOIs for plain
+`@article` entries where CSL prints them, book punctuation differs slightly, and
+`\bibinfo{}`/`\bibcommenthead` are absent. The README now lists those differences instead
+of claiming equivalence — an earlier draft of this entry said "same fields, same order,
+same punctuation", which was an over-generalisation from a single compared entry.
+
+**Reference numbering follows first citation**, which took a fix: `sn-nature.bst` has no
+`SORT` command, so it numbers from `\citation` order in the `.aux`, while citeproc run on
+a reference-only probe document has no citation order to sort by and fell back to bib-file
+order. A manuscript citing `@alpha` before `@zebra` got `[2]` and `[1]`. The writer now
+sorts the entries into first-citation order (reusing the key order it already collects for
+the missing-key warning) before rendering.
+
+- `embed-bibliography: false` goes back to `\bibliography{references}` plus the `.bst`,
+  for anyone who needs the `.bst` output byte for byte or is sending to a journal that
+  wants the classic BibTeX route.
+- Selecting an `sn-refstyle` other than `sn-nature` turns embedding off by itself and says
+  so, since `csl/` only carries `apa`/`nature`/`pnas` — rendering a Vancouver-styled
+  manuscript's bibliography in Nature style would be worse than an extra BibTeX run.
+- `references.bib` still ships (useful to hand a co-author), but nothing in the build
+  reads it. The `.bst` is no longer packed when embedding, since it would be dead weight.
+
+Also caught in review: `csl/nature.csl` was a new runtime dependency that nothing
+declared, so `pack-bundle` left it out — anyone installing the `nature-latex` bundle got a
+writer whose default feature could never find its style file, visible only as one stderr
+line before it fell back to BibTeX. It is now in the recipe's `extraFiles`, and the writer
+probes for it the way it already probes for the `.cls` and `.bst`.
+
+`writers/latex-submission.lua` → 1.4.0, recipe and bundle → **3.0.0** (the zip loses a
+file and the compile command changes — same reason 2.0.0 was a major), `full` → 1.0.10.
+
 ## 1.1.1 — 2026-09-20
 
 **Float sections now land after the reference list, in Springer Nature's required order.**
