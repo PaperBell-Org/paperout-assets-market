@@ -2,6 +2,33 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**The reference list is now written into `main.tex`.** The submission package compiles
+with two `xelatex` passes and nothing else — no `.bib`, no `.bst`, no BibTeX step.
+Springer Nature's own template asks for exactly this when submitting to a Nature Portfolio
+journal through eJP, and it was previously item 1 on this recipe's Known gaps list, to be
+done by hand after a local compile.
+
+A Lua writer cannot run BibTeX — and should not; the repo's security scan exists to stop
+filters executing external commands. So the list is rendered by Pandoc's citeproc through
+`csl/nature.csl` and wrapped as `\bibitem` entries. Checked against the real thing: the
+same entry via `sn-nature.bst` and via `nature.csl` comes out with the same fields, order
+and punctuation, and typesets identically. The `.bst` additionally wraps each field in
+`\bibinfo{}` for production's XML conversion, which has no effect on the page.
+`link-bibliography` has to be off, or citeproc turns every title into a DOI hyperlink.
+
+- `embed-bibliography: false` goes back to `\bibliography{references}` plus the `.bst`,
+  for anyone who needs the `.bst` output byte for byte or is sending to a journal that
+  wants the classic BibTeX route.
+- Selecting an `sn-refstyle` other than `sn-nature` turns embedding off by itself and says
+  so, since `csl/` only carries `apa`/`nature`/`pnas` — rendering a Vancouver-styled
+  manuscript's bibliography in Nature style would be worse than an extra BibTeX run.
+- `references.bib` still ships (useful to hand a co-author), but nothing in the build
+  reads it. The `.bst` is no longer packed when embedding, since it would be dead weight.
+
+`writers/latex-submission.lua` → 1.4.0, recipe and bundle → 2.1.0, `full` → 1.0.10.
+
 ## 1.1.1 — 2026-09-20
 
 **Float sections now land after the reference list, in Springer Nature's required order.**

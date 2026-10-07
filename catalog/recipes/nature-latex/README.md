@@ -15,22 +15,27 @@ package their submission system expects:
 ```
 submission.zip
 ├── main.tex        \documentclass[pdflatex,sn-nature]{sn-jnl}
-├── references.bib  only the entries this manuscript cites
+│                   reference list embedded as \bibitem entries
+├── references.bib  the cited entries, kept for your own reference
 ├── sn-jnl.cls      the Springer Nature document class
-├── sn-nature.bst   the reference style your `sn-refstyle` selected
 └── figures/
     ├── basin.png
     └── panel.png
 ```
 
-Unzip it and compile:
+Unzip it and compile — **two passes, no BibTeX**:
 
 ```bash
-xelatex main && bibtex main && xelatex main && xelatex main
+xelatex main && xelatex main
 ```
 
-**BibTeX, not biber** — `sn-jnl.cls` loads `natbib` and issues its own
-`\bibliographystyle`, so the whole chain is classic BibTeX.
+The reference list is written into `main.tex` as a `thebibliography` block, so there is
+no `.bbl` step and no `.bst` to ship. Springer Nature's own template asks for exactly
+this when submitting to a Nature Portfolio journal through eJP: paste the `.bbl` contents
+into the `.tex` and drop the `\bibliography` command.
+
+`references.bib` still rides along — it is what you hand a co-author, and some journals
+ask for it — but nothing in the build reads it.
 
 **XeLaTeX, not pdfLaTeX, if the manuscript contains any CJK** — Chinese authors
 commonly sign bilingually (`Shuang Song 宋爽`), which puts CJK inside `\sur{}`, and
@@ -152,6 +157,7 @@ bibliography and pins the figures with `[H]` so they cannot drift back.
 | `sn-refstyle:` | `sn-nature` | Reference style. One of `sn-nature`, `sn-basic`, `sn-mathphys-num`, `sn-mathphys-ay`, `sn-aps`, `sn-vancouver-num`, `sn-vancouver-ay`, `sn-apa`, `sn-chicago`. Selects both the documentclass option and the `.bst` packed into the zip. |
 | `sn-options:` | `[pdflatex, <sn-refstyle>]` | Takes over the documentclass option list entirely, e.g. `[pdflatex, sn-basic, twocolumn]`. If you set this, keep an `sn-*` style in the list or the class emits no `\bibliographystyle` and your references vanish. |
 | `nocite:` | — | Entries that belong in the reference list without being cited in the text. |
+| `embed-bibliography:` | `true` | Write the reference list into `main.tex`. `false` emits `\bibliography{references}` instead and ships the `.bst`, for the classic `xelatex → bibtex → xelatex ×2` route. |
 
 ### Sending it out for review instead
 
@@ -169,6 +175,10 @@ end unless you also set `figures-at-end: false`.
 
 ## What you get, and what to check
 
+- **A self-contained `main.tex`.** The reference list is embedded, so the manuscript
+  compiles with two `xelatex` passes and nothing else — no `.bib`, no `.bst`, no BibTeX.
+  Entries are rendered through `csl/nature.csl`, which comes out
+  [essentially identical](#why-csl-and-not-the-bst) to what `sn-nature.bst` produces.
 - **Only cited references.** Entries in your library that this manuscript does not cite
   never reach `references.bib`. A citation key that resolves to nothing is reported on
   stderr during export — worth reading, because in a BibTeX chain a bad key does not show
@@ -184,22 +194,46 @@ end unless you also set `figures-at-end: false`.
   converted to BibTeX's `year =`, because Pandoc's BibTeX writer drops `doi` — and
   `sn-nature.bst` uses it.
 
+## Why CSL and not the `.bst`
+
+The export cannot run BibTeX — a Lua writer has no business executing external commands,
+and the repo's security scan exists to keep it that way. So the embedded list is rendered
+by Pandoc's citeproc through `csl/nature.csl` rather than by `sn-nature.bst`.
+
+The output is equivalent in practice. The same entry, both ways:
+
+```latex
+% sn-nature.bst (via a local bibtex run)
+\bibinfo{author}{Roediger, H.~L.} \& \bibinfo{author}{Abel, M.}
+\newblock \bibinfo{title}{Collective memory: {A} new arena of cognitive study}.
+\newblock \emph{\bibinfo{journal}{Trends in Cognitive Sciences}}
+\textbf{\bibinfo{volume}{19}}, \bibinfo{pages}{359--361} (\bibinfo{year}{2015}).
+
+% csl/nature.csl (what this export writes)
+Roediger, H. L. \& Abel, M. Collective memory: {A} new arena of cognitive
+study. \emph{Trends in Cognitive Sciences} \textbf{19}, 359--361 (2015).
+```
+
+Same fields, same order, same punctuation; it typesets the same. What the `.bst` adds is a
+layer of `\bibinfo{}` semantic markup that production uses when converting to XML — it has
+no effect on the page. If you need the `.bst` output byte for byte, set
+`embed-bibliography: false` and run `bibtex` yourself.
+
+Only Nature style is available for embedding, because `csl/` only carries
+`apa`/`nature`/`pnas`. Selecting another `sn-refstyle` turns embedding off automatically
+and says so on stderr.
+
 ## Known gaps
 
-1. **Nature Portfolio / eJP submissions want the `.bbl` inlined.** Springer Nature's own
-   template says that when submitting to a Nature Portfolio journal through eJP, you should
-   paste the contents of your `.bbl` file into `main.tex` and delete the `\bibliography`
-   command. The export cannot run BibTeX, so it cannot produce a `.bbl` — compile once
-   locally, then do that last step by hand.
-2. **No callouts.** `callout.lua` and `preamble.lua` are deliberately not in this chain:
+1. **No callouts.** `callout.lua` and `preamble.lua` are deliberately not in this chain:
    they pull tcolorbox, tikz and algorithm into the preamble, which a submission source file
    has no use for and which only widens the surface for a failed compile on the journal's
    TeX installation. Obsidian callouts come through as plain blockquotes.
-3. **Figures inside raw LaTeX are not packed.** An `\includegraphics` that reaches the
+2. **Figures inside raw LaTeX are not packed.** An `\includegraphics` that reaches the
    output as a raw LaTeX block — from `xlsx_table.lua` or a `tikz` fence — is invisible to
    the figure collector, so its file is not copied into the zip and its path is not
    rewritten.
-4. **`sn-aps` has an upstream naming bug.** The class asks for `\bibliographystyle{sn-APS}`
+3. **`sn-aps` has an upstream naming bug.** The class asks for `\bibliographystyle{sn-APS}`
    while the shipped file is `sn-aps.bst`. The export packs it under the name the class
    asks for, so it works on case-sensitive filesystems too.
 
