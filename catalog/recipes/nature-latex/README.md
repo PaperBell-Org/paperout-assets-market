@@ -228,9 +228,10 @@ embedding off automatically and says so on stderr.
    has no use for and which only widens the surface for a failed compile on the journal's
    TeX installation. Obsidian callouts come through as plain blockquotes.
 2. **Figures inside raw LaTeX are not packed.** An `\includegraphics` that reaches the
-   output as a raw LaTeX block — from `xlsx_table.lua` or a `tikz` fence — is invisible to
-   the figure collector, so its file is not copied into the zip and its path is not
-   rewritten.
+   output as a raw LaTeX block — from a `tikz` fence, say — is invisible to the figure
+   collector, so its file is not copied into the zip and its path is not rewritten.
+   (Raw-LaTeX *tables*, which is what `xlsx_table.lua` emits, **are** collected into the
+   Tables section.)
 3. **`sn-aps` has an upstream naming bug.** The class asks for `\bibliographystyle{sn-APS}`
    while the shipped file is `sn-aps.bst`. The export packs it under the name the class
    asks for, so it works on case-sensitive filesystems too.

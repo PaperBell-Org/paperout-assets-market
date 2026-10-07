@@ -514,6 +514,18 @@ end
   顺时调换成 Tables → Figures，并给 figure 加 [H] 钉住位置。表格是 longtable，
   本来就不是浮动体，不需要钉。
 --]]
+-- 裸 LaTeX 表格：xlsx_table.lua 把 ```xlsx-table 块转成 \begin{table} 的 RawBlock，
+-- 而 figures-at-end.lua 只认 pandoc 原生 Table 和带 tbl: 的 Div，所以这些表格不会
+-- 被它搬走。实测的后果是原生表格后置了、xlsx 表格留在正文里，同一篇稿子两种待遇。
+-- 这里补上。只认整块就是一个表格环境的 RawBlock（xlsx_table 正是这么产的），
+-- 混了别的内容的不动，免得把正文切坏。
+local function is_raw_table(blk)
+  if blk.t ~= 'RawBlock' then return false end
+  if blk.format ~= 'latex' and blk.format ~= 'tex' then return false end
+  return blk.text:match('^%s*\\begin{table%*?}') ~= nil
+    or blk.text:match('^%s*\\begin{longtable}') ~= nil
+end
+
 local function relocate_floats(doc)
   local fi, ti
   for i, blk in ipairs(doc.blocks) do
@@ -523,7 +535,6 @@ local function relocate_floats(doc)
       if txt == 'Tables' and not ti then ti = i end
     end
   end
-  if not (fi or ti) then return doc, nil end
 
   -- figures-at-end.lua 产出的顺序固定是 Figures 段在前、Tables 段在后
   local cut = math.min(fi or math.huge, ti or math.huge)
@@ -533,9 +544,23 @@ local function relocate_floats(doc)
     if ti and i >= ti then tbls:insert(blk) else figs:insert(blk) end
   end
 
+  -- 正文（被 figures-at-end 切走的那段之前）里剩下的裸 LaTeX 表格也要收走。
+  -- tables-at-end 由 filters/nature-latex-layout.lua 填默认值，这里一定有值。
+  local raw_tbls = pandoc.List()
   local body = pandoc.List()
-  for i = 1, cut - 1 do body:insert(doc.blocks[i]) end
+  local take_raw = truthy(doc.meta['tables-at-end'])
+  for i = 1, math.min(cut - 1, #doc.blocks) do
+    local blk = doc.blocks[i]
+    if take_raw and is_raw_table(blk) then raw_tbls:insert(blk) else body:insert(blk) end
+  end
   doc.blocks = body
+
+  -- 原生表格的 Tables 节已经带了 Header；只有裸表格时得自己加一个，
+  -- 否则它们会光秃秃地跟在参考文献后面。
+  if #raw_tbls > 0 and #tbls == 0 then
+    tbls:insert(pandoc.Header(1, pandoc.Inlines { pandoc.Str('Tables') }))
+  end
+  tbls:extend(raw_tbls)
 
   local out = {}
   for _, section in ipairs({ tbls, figs }) do      -- SN 的顺序：先表后图
