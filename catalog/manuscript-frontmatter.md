@@ -104,6 +104,7 @@ These are read by one route and ignored by the others, so they are safe to leave
 | `figures-at-end:` / `tables-at-end:` | Word, LaTeX | Move floats to the end. |
 | `sn-refstyle:` | `nature-latex` | Reference style / `.bst`. Default `sn-nature`. |
 | `sn-options:` | `nature-latex` | Takes over the `sn-jnl` documentclass options. |
+| `embed-bibliography:` | `nature-latex` | Default on: writes the reference list into `main.tex` so it compiles without BibTeX. `false` ships `references.bib` + the `.bst` instead. |
 | `nocite:` | all | Entries in the reference list that the text does not cite. |
 
 ## If you add a manuscript route

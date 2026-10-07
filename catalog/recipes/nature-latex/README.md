@@ -177,8 +177,8 @@ end unless you also set `figures-at-end: false`.
 
 - **A self-contained `main.tex`.** The reference list is embedded, so the manuscript
   compiles with two `xelatex` passes and nothing else — no `.bib`, no `.bst`, no BibTeX.
-  Entries are rendered through `csl/nature.csl`, which comes out
-  [essentially identical](#why-csl-and-not-the-bst) to what `sn-nature.bst` produces.
+  Entries are rendered through `csl/nature.csl` in first citation order; see
+  [how it differs from the `.bst`](#why-csl-and-not-the-bst).
 - **Only cited references.** Entries in your library that this manuscript does not cite
   never reach `references.bib`. A citation key that resolves to nothing is reported on
   stderr during export — worth reading, because in a BibTeX chain a bad key does not show
@@ -198,30 +198,28 @@ end unless you also set `figures-at-end: false`.
 
 The export cannot run BibTeX — a Lua writer has no business executing external commands,
 and the repo's security scan exists to keep it that way. So the embedded list is rendered
-by Pandoc's citeproc through `csl/nature.csl` rather than by `sn-nature.bst`.
+by Pandoc's citeproc through `csl/nature.csl`, the CSL style Nature publishes, rather than
+by `sn-nature.bst`.
 
-The output is equivalent in practice. The same entry, both ways:
+**It is close, not byte-identical.** Both produce a Nature-style numbered list in first
+citation order with the same author/title/journal/volume/pages/year layout, and both
+typeset legibly. Known differences:
 
-```latex
-% sn-nature.bst (via a local bibtex run)
-\bibinfo{author}{Roediger, H.~L.} \& \bibinfo{author}{Abel, M.}
-\newblock \bibinfo{title}{Collective memory: {A} new arena of cognitive study}.
-\newblock \emph{\bibinfo{journal}{Trends in Cognitive Sciences}}
-\textbf{\bibinfo{volume}{19}}, \bibinfo{pages}{359--361} (\bibinfo{year}{2015}).
+- **DOIs.** `sn-nature.bst` does not print a DOI for a plain `@article`; the CSL style
+  does (`… (2021) doi:10.1000/example.2021.001.`).
+- **Punctuation** differs in places — a book entry gets `\emph{Title}. (Press, 2019).`
+  from CSL against `\emph{Title} (Press, 2019).` from the `.bst`.
+- `\bibinfo{}` field markup and `\bibcommenthead`, which the `.bst` emits for
+  production's XML conversion, are absent. They do not affect the page.
 
-% csl/nature.csl (what this export writes)
-Roediger, H. L. \& Abel, M. Collective memory: {A} new arena of cognitive
-study. \emph{Trends in Cognitive Sciences} \textbf{19}, 359--361 (2015).
-```
+If your journal needs the `.bst`'s exact output, set `embed-bibliography: false` and run
+`bibtex` yourself — that path ships `references.bib` and the `.bst` and is unchanged.
 
-Same fields, same order, same punctuation; it typesets the same. What the `.bst` adds is a
-layer of `\bibinfo{}` semantic markup that production uses when converting to XML — it has
-no effect on the page. If you need the `.bst` output byte for byte, set
-`embed-bibliography: false` and run `bibtex` yourself.
-
-Only Nature style is available for embedding, because `csl/` only carries
-`apa`/`nature`/`pnas`. Selecting another `sn-refstyle` turns embedding off automatically
-and says so on stderr.
+Only Nature style can be embedded. `csl/` carries just `apa`/`nature`/`pnas` (the rest are
+fetched by the plugin at run time and are not on disk when the writer runs), and a bare
+`\bibitem` only numbers correctly under natbib's numeric mode — an author-year `sn-*`
+style would render `(?)` throughout. Selecting any other `sn-refstyle` therefore turns
+embedding off automatically and says so on stderr.
 
 ## Known gaps
 

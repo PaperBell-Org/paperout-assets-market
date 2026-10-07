@@ -529,11 +529,12 @@ writers/latex-submission.lua:
       that emits a Springer Nature submission package as a zip: main.tex, a
       references.bib subset holding only the cited entries, each figure as a file
       with a LaTeX-safe name, the sn-jnl class and the .bst the chosen reference
-      style needs."
+      style needs. The reference list is embedded into main.tex by default, rendered
+      through csl/nature.csl, so the package compiles without BibTeX."
     zh: 自定义 Pandoc writer（不是 filter —— 它写在 `to:`，绝不能放进 `filters:`），
       把手稿打成 Springer Nature 投稿包 zip：main.tex、只含被引条目的
       references.bib、逐张独立且文件名已净化的图片、sn-jnl 文档类和所选样式对应的
-      .bst。
+      .bst。文献表默认经 csl/nature.csl 渲染后内嵌进 main.tex，因此投稿包不需要 BibTeX。
 templates/nature-latex.latex:
   version: 1.2.0
   title:

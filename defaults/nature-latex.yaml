@@ -91,16 +91,17 @@ variables:
 # 用途：把 Obsidian / Longform 的手稿导成期刊要的 LaTeX 源文件 zip：
 #
 #   submission.zip
-#   ├── main.tex        \documentclass{sn-jnl}，单文件、无 \input
-#   ├── references.bib  只含本文引用到的条目（从全局 bib 里抽）
+#   ├── main.tex        \documentclass{sn-jnl}，单文件、无 \input，
+#   │                   文献表以 thebibliography 内嵌
+#   ├── references.bib  只含本文引用到的条目。内嵌时 main.tex 不读它，仍然打包
 #   ├── sn-jnl.cls      Springer Nature 文档类
-#   ├── sn-nature.bst   当前样式对应的那一个
 #   └── figures/…       所有被引用的图，文件名已净化成纯 ASCII
 #
 # 默认是**出版形态**：单倍行距、无行号、图表后置 —— 期刊排出来的样子。
 # 送审要的双倍行距和行号是两个独立开关，笔记里写 referee: true / lineno: true。
 #
-# 编译：xelatex → bibtex → xelatex ×2（BibTeX，不是 biber）。
+# 编译：xelatex ×2 —— 文献表内嵌，不需要 BibTeX。
+# 笔记写 embed-bibliography: false 则回到 xelatex → bibtex → xelatex ×2。
 # 纯英文的稿子用 pdflatex 也可以；含中文就必须 xelatex。
 #
 # 与 paperbell.yaml（PDF 链）有意的差别：
