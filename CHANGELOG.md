@@ -2,6 +2,27 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**Raw-LaTeX tables are collected at the end too.** Reported from a real export: the
+tables stayed in the body while the figures moved.
+
+`filters/xlsx_table.lua` turns an ```` ```xlsx-table ```` block into a `\begin{table}`
+**RawBlock**, and `figures-at-end.lua` only recognises Pandoc's native `Table` and a `Div`
+carrying `table`/`tbl:`. So a manuscript with both kinds got both treatments — pipe tables
+relocated, xlsx tables left in the text, which is exactly what the real manuscript showed
+(its `\begin{table}[!ht]` at line 818 against `\section{Figures}` at 1258).
+
+The writer now also collects raw-LaTeX `table`/`table*`/`longtable` blocks into the Tables
+section, adding the heading itself when there are no native tables to have created one.
+Only blocks that are *entirely* one table environment are moved, so a raw block mixing
+other content is left alone. `tables-at-end: false` still leaves everything in place.
+
+The sample gained a raw-LaTeX table, because every golden passed unchanged after the fix —
+the behaviour had no coverage at all.
+
+`writers/latex-submission.lua` → 1.5.0, recipe and bundle → 3.0.1, `full` → 1.0.11.
+
 ## 1.2.0 — 2026-10-07
 
 **The reference list is now written into `main.tex`.** The submission package compiles

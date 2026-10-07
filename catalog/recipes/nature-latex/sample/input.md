@@ -118,6 +118,24 @@ $$
 L = \frac{S_{\max} - S_t}{Q_{\text{in}}}
 $$ {#eq:lag}
 
+裸 LaTeX 表格（xlsx_table.lua 产出的就是这种 RawBlock）。锁的是它也要跟原生表格
+一样被后置 —— figures-at-end.lua 只认 pandoc 原生 Table，少了 writer 这一手，
+同一篇稿子里 pipe 表格搬走了、xlsx 表格留在正文，两种待遇。
+
+```{=latex}
+\begin{table}[!ht]
+\caption{Gauge metadata, emitted as raw LaTeX.}\label{tbl:raw}
+\begin{tabular}{ll}
+\hline
+Station & Record \\
+\hline
+Upper & 1951--2020 \\
+Lower & 1963--2020 \\
+\hline
+\end{tabular}
+\end{table}
+```
+
 # Discussion
 
 Contact the corresponding author at song@example.edu; the dataset DOI is
