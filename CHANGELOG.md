@@ -2,7 +2,7 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
-## Unreleased
+## 1.2.0 — 2026-10-07
 
 **The reference list is now written into `main.tex`.** The submission package compiles
 with two `xelatex` passes and nothing else — no `.bib`, no `.bst`, no BibTeX step.
