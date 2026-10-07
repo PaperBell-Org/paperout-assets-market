@@ -2,7 +2,7 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
-## Unreleased
+## 1.2.1 — 2026-10-07
 
 **Raw-LaTeX tables are collected at the end too.** Reported from a real export: the
 tables stayed in the body while the figures moved.
