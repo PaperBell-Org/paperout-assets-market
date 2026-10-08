@@ -87,7 +87,7 @@ Wrap the span in the manuscript scene:
 <!--ms:model-spec-->Responses are estimated with a hierarchical model …<!--/ms:model-spec-->
 ```
 
-then reference it by id in a ` ```manuscript ` fence. `manuscript_include.lua` pulls the **current** text at export time, so a quote cannot drift from what you submitted, and citations inside it resolve into the letter's own bibliography. Ids are looked up in the sibling `source/` folder.
+then reference it by id in a ` ```manuscript ` fence. `manuscript_include.lua` pulls the **current** text at export time, so a quote cannot drift from what you submitted, and citations inside it resolve into the letter's own bibliography. Figure and table references inside it — `\ref{fig:x}` or pandoc-crossref's `[@fig:x]` / `[@tbl:x]` — take the manuscript's numbers from `figure-numbers.json` / `table-numbers.json` beside the letter, so `[@fig:x]a` prints as `Figure 2a`; a label those files do not know is left as written. Ids are looked up in the sibling `source/` folder.
 
 ## Requirements
 
