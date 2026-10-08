@@ -8,6 +8,10 @@ PANDOC_VERSION="${PANDOC_VERSION:-3.10.1}"
 # Keep this pair in sync — a mismatch fails with a pandoc-types API error, and the
 # goldens (catalog/recipes/*/sample/expected.fingerprint) are generated with this exact
 # pair, so bumping either means regenerating them with `build-recipe <id> --update-golden`.
+# The Word masters (templates/*-reference.docx) do NOT follow this pin: they are patched
+# from pandoc's reference.docx vendored in scripts/reference-base/. After a bump, run
+# `node scripts/vendor-pandoc-reference.mjs --check` with the new pandoc; if its base
+# changed, adopting it is a separate, deliberate step (see that script's header).
 CROSSREF_VERSION="${CROSSREF_VERSION:-0.3.25}"
 
 echo "── installing pandoc ${PANDOC_VERSION} ──"

@@ -5,13 +5,21 @@
 //
 //   node scripts/check-pr-scope.mjs [--base=<ref>]
 
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { CONSUMPTION_DIRS } from './lib/catalog.mjs';
 
-const baseArg = process.argv.find((a) => a.startsWith('--base='));
-const base = process.env.GITHUB_BASE_REF || (baseArg && baseArg.split('=')[1]) || 'main';
-const labels = (process.env.PR_LABELS || '').toLowerCase();
-const hasCoreChangeLabel = /\bcore-change\b/.test(labels);
+/**
+ * Whether PR_LABELS (label names joined with commas by the workflow) contains exactly
+ * `core-change`. Each name is compared whole: a word-boundary regex would also accept
+ * `not-core-change` or `revert-core-change`, since `-` is a word boundary.
+ */
+export function hasCoreChangeLabel(labels) {
+  return String(labels || '')
+    .split(',')
+    .some((l) => l.trim().toLowerCase() === 'core-change');
+}
 
 // Every consumption dir is core, plus the shared preamble and the toolchain itself.
 const PROTECTED = [
@@ -21,7 +29,7 @@ const PROTECTED = [
   /^\.github\//,
 ];
 
-function diffLines() {
+function diffLines(base) {
   for (const range of [`origin/${base}...HEAD`, `${base}...HEAD`]) {
     try {
       const out = execFileSync('git', ['diff', '--name-status', range], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
@@ -33,32 +41,42 @@ function diffLines() {
   return null;
 }
 
-const lines = diffLines();
-if (!lines) {
-  console.error(`check-pr-scope: cannot diff against ${base} (skipping — not a PR context)`);
-  process.exit(0);
-}
+function main() {
+  const baseArg = process.argv.find((a) => a.startsWith('--base='));
+  const base = process.env.GITHUB_BASE_REF || (baseArg && baseArg.split('=')[1]) || 'main';
 
-const violations = [];
-for (const l of lines) {
-  const m = l.match(/^(\S+)\s+(.+)$/);
-  if (!m) continue;
-  const status = m[1];
-  const file = m[2];
-  const changedExisting = /^[MDR]/.test(status); // Modified / Deleted / Renamed
-  if (changedExisting && PROTECTED.some((re) => re.test(file))) {
-    violations.push(`${status}\t${file}`);
+  const lines = diffLines(base);
+  if (!lines) {
+    console.error(`check-pr-scope: cannot diff against ${base} (skipping — not a PR context)`);
+    return 0;
   }
+
+  const violations = [];
+  for (const l of lines) {
+    const m = l.match(/^(\S+)\s+(.+)$/);
+    if (!m) continue;
+    const status = m[1];
+    const file = m[2];
+    const changedExisting = /^[MDR]/.test(status); // Modified / Deleted / Renamed
+    if (changedExisting && PROTECTED.some((re) => re.test(file))) {
+      violations.push(`${status}\t${file}`);
+    }
+  }
+
+  if (violations.length && !hasCoreChangeLabel(process.env.PR_LABELS)) {
+    console.error('check-pr-scope: this PR modifies/deletes protected core files:');
+    for (const v of violations) console.error(`  ${v}`);
+    console.error('\nExternal contributions should ADD files. To change an existing core asset, a maintainer must apply the "core-change" label.');
+    return 1;
+  }
+  console.error(
+    violations.length
+      ? `check-pr-scope: ${violations.length} core change(s) approved via core-change label`
+      : 'check-pr-scope: ok — no protected core files modified'
+  );
+  return 0;
 }
 
-if (violations.length && !hasCoreChangeLabel) {
-  console.error('check-pr-scope: this PR modifies/deletes protected core files:');
-  for (const v of violations) console.error(`  ${v}`);
-  console.error('\nExternal contributions should ADD files. To change an existing core asset, a maintainer must apply the "core-change" label.');
-  process.exit(1);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = main();
 }
-console.error(
-  violations.length
-    ? `check-pr-scope: ${violations.length} core change(s) approved via core-change label`
-    : 'check-pr-scope: ok — no protected core files modified'
-);

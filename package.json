@@ -16,6 +16,7 @@
     "check:versions": "node scripts/check-versions.mjs",
     "mk:manuscript-reference": "node scripts/mk-manuscript-reference.mjs",
     "mk:response-letter-reference": "node scripts/mk-response-letter-reference.mjs",
+    "vendor:pandoc-reference": "node scripts/vendor-pandoc-reference.mjs",
     "build:recipe": "node scripts/build-recipe.mjs",
     "test": "vitest run"
   },

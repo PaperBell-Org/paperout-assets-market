@@ -1,20 +1,18 @@
 #!/usr/bin/env node
 // Generate `templates/manuscript-reference.docx` — the Word style master for the
-// `manuscript-obsidian` recipe — deterministically from pandoc's own default
-// reference.docx.
+// `manuscript-obsidian` recipe — deterministically from pandoc's default
+// reference.docx, vendored at scripts/reference-base/ (see BASE_REFERENCE_DOCX in
+// scripts/lib/docx.mjs). No pandoc is needed to run this script or its --check.
 //
 //   node scripts/mk-manuscript-reference.mjs            # write the file
 //   node scripts/mk-manuscript-reference.mjs --check    # assert the committed file matches
+//   node scripts/mk-manuscript-reference.mjs --help
 //
 // Why derive instead of committing a hand-saved Word file: a .docx is an opaque
 // binary in review. Here the only reviewable artifact is the XML below, and --check
 // (run in CI) proves the committed file still holds exactly what this source produces.
-//
-// --check compares the zip's ENTRY CONTENT, not its bytes: deflate output differs
-// between zlib builds, so a byte comparison would fail on a CI runner for a file that
-// is materially identical. For the same reason the writer leaves the committed file
-// alone when the content already matches, so regenerating on a different machine does
-// not produce a diff that says nothing.
+// The CLI, the content comparison and the shared styles.xml steps (docDefaults, theme
+// fonts, themed heading colour) live in scripts/lib/docx.mjs.
 //
 // Base choice: pandoc's default master already defines every style name the docx
 // filters address (Title, Author, Abstract, Abstract Title, Image Caption, Table
@@ -29,15 +27,12 @@
 // co-author room to write in the margin. The exact list the master applies is
 // documented in catalog/recipes/manuscript-obsidian/README.md; keep the two in sync.
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readZip, writeZip, patchEntry, entriesEqual } from './lib/docx.mjs';
+import { buildMaster, runMasterGenerator } from './lib/docx.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const OUT = path.join(ROOT, 'templates', 'manuscript-reference.docx');
-const check = process.argv.includes('--check');
+export const OUT = path.join(ROOT, 'templates', 'manuscript-reference.docx');
 
 const TNR = 'Times New Roman';
 const DOUBLE = '<w:spacing w:after="0" w:line="480" w:lineRule="auto"/>';
@@ -142,40 +137,19 @@ function heading(level, charStyle, sz, emphasis) {
 // New style ids that do not exist in the base master and must be inserted.
 const ADDED = ['Affiliation', 'Corresponding', 'Keywords'];
 
+// patchStylesXml (scripts/lib/docx.mjs) also pins every theme-font attribute to Times
+// and drops pandoc's themed heading colour (0F4761) from the headings and their linked
+// character styles. Styles this script does not rewrite keep pandoc's colours —
+// Hyperlink (4F81BD), TOC Heading (365F91) and the dark greys of Heading 6–9, their
+// character styles and Subtitle Char (595959, 272727); body text, captions and
+// Heading 1–5 are black.
+// test/docx.test.mjs pins that list, so a new colour cannot slip in unnoticed.
 const DOC_DEFAULTS =
   '<w:docDefaults><w:rPrDefault><w:rPr>' +
   `<w:rFonts w:ascii="${TNR}" w:hAnsi="${TNR}" w:eastAsia="${TNR}" w:cs="${TNR}"/>` +
   '<w:sz w:val="24"/><w:szCs w:val="24"/>' +
   '<w:lang w:val="en-US" w:eastAsia="en-US" w:bidi="ar-SA"/>' +
   '</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>' + DOUBLE + '</w:pPr></w:pPrDefault></w:docDefaults>';
-
-function patchStyles(xml) {
-  let out = xml;
-
-  out = replaceOne(out, /<w:docDefaults>[\s\S]*?<\/w:docDefaults>/, DOC_DEFAULTS, 'docDefaults');
-
-  // Theme fonts resolve to Aptos/Calibri via theme1.xml; pin them to Times so a style
-  // we did not rewrite still lands in the right family.
-  out = out
-    .replace(/w:asciiTheme="(?:major|minor)HAnsi"/g, `w:ascii="${TNR}"`)
-    .replace(/w:hAnsiTheme="(?:major|minor)HAnsi"/g, `w:hAnsi="${TNR}"`)
-    .replace(/w:eastAsiaTheme="(?:major|minor)EastAsia"/g, `w:eastAsia="${TNR}"`)
-    .replace(/w:cstheme="(?:major|minor)Bidi"/g, `w:cs="${TNR}"`);
-
-  // Drop the themed accent colour wherever it appears (headings and their linked
-  // character styles) — a submitted manuscript is black on white.
-  out = out.replace(/<w:color w:val="0F4761"[^/]*\/>/g, '');
-
-  for (const [id, body] of Object.entries(STYLES)) {
-    if (ADDED.includes(id)) continue;
-    const re = new RegExp(`<w:style\\b[^>]*w:styleId="${id}"[^>]*>[\\s\\S]*?<\\/w:style>`);
-    out = replaceOne(out, re, body, `style ${id}`);
-  }
-
-  const additions = ADDED.map((id) => STYLES[id]).join('');
-  out = replaceOne(out, /<\/w:styles>/, additions + '</w:styles>', 'styles close tag');
-  return out;
-}
 
 // ------------------------------------------------------------- document.xml ----
 
@@ -188,75 +162,12 @@ const SECT_PR =
   '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/>' +
   '</w:sectPr>';
 
-function patchDocument(xml) {
-  return replaceOne(xml, /<w:sectPr>[\s\S]*?<\/w:sectPr>/, SECT_PR, 'sectPr');
-}
-
-// A patch that matches nothing is the failure mode that produces a plausible-looking
-// but wrong master, so every replacement asserts it fired.
-function replaceOne(haystack, re, replacement, what) {
-  if (!re.test(haystack)) throw new Error(`patch target not found: ${what}`);
-  return haystack.replace(re, () => replacement);
-}
-
 // ------------------------------------------------------------------- main ----
 
-function build() {
-  const base = execFileSync('pandoc', ['--print-default-data-file', 'reference.docx'], {
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  const entries = readZip(base);
-  patchEntry(entries, 'word/styles.xml', patchStyles);
-  patchEntry(entries, 'word/document.xml', patchDocument);
-  return entries;
+export function build() {
+  return buildMaster({ docDefaults: DOC_DEFAULTS, font: TNR, styles: STYLES, added: ADDED, sectPr: SECT_PR });
 }
 
-try {
-  execFileSync('pandoc', ['--version'], { stdio: 'ignore' });
-} catch {
-  console.error('mk-manuscript-reference: pandoc not found — it supplies the base reference.docx.');
-  process.exit(2);
-}
-
-const builtEntries = build();
-const rel = path.relative(ROOT, OUT);
-
-function committedEntries() {
-  if (!fs.existsSync(OUT)) return null;
-  try {
-    return readZip(fs.readFileSync(OUT));
-  } catch (e) {
-    console.error(`mk-manuscript-reference: ${rel} is not readable as a .docx — ${e.message}`);
-    process.exit(1);
-  }
-}
-
-const current = committedEntries();
-const matches = current !== null && entriesEqual(current, builtEntries);
-
-if (check) {
-  if (current === null) {
-    console.error(`mk-manuscript-reference: ${rel} is missing — run this script without --check.`);
-    process.exit(1);
-  }
-  if (!matches) {
-    console.error(
-      `mk-manuscript-reference: ${rel} does not match this script.\n` +
-        '  Re-run `node scripts/mk-manuscript-reference.mjs` and commit the result.\n' +
-        '  (A pandoc version change in the base reference.docx can also cause this.)'
-    );
-    for (const part of ['word/styles.xml', 'word/document.xml']) {
-      const a = current.find((x) => x.name === part);
-      const b = builtEntries.find((x) => x.name === part);
-      if (a && b && !a.data.equals(b.data)) console.error(`  differs: ${part}`);
-    }
-    process.exit(1);
-  }
-  console.error(`mk-manuscript-reference: committed master matches (${builtEntries.length} parts)`);
-} else if (matches) {
-  console.error(`mk-manuscript-reference: ${rel} already up to date — left unchanged`);
-} else {
-  const buf = writeZip(builtEntries);
-  fs.writeFileSync(OUT, buf);
-  console.error(`mk-manuscript-reference: wrote ${rel} (${buf.length} bytes, ${builtEntries.length} parts)`);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = runMasterGenerator({ name: 'mk-manuscript-reference', out: OUT, build });
 }
