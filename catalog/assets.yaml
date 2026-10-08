@@ -316,7 +316,7 @@ filters/shift_headings.lua:
       set) to avoid a duplicate H1, dropping headings that fall to level 0.
     zh: 按 heading_shift（设了 title 时默认 1）整体降低 Markdown 标题级别，避免与标题重复的 H1，降到 0 级的标题被删除。
 filters/xlsx_table.lua:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: xlsx to booktabs table
     zh: xlsx 转三线表

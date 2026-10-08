@@ -36,8 +36,18 @@ Every golden passed unchanged before that, so this path had no coverage.
 
 `filters/manuscript_include.lua` → 1.0.2.
 
-Recipes `response-letter` → 1.0.2 and `response-letter-docx` → 1.1.2; bundles
-`response-letter` → 1.0.4, `response-letter-docx` → 1.1.2, `full` → 1.0.13.
+**Citations in an `xlsx-table` block's `notes:` are resolved.** Closes #29. Cell
+citations already reached citeproc, but `notes:` was written straight to a LaTeX string by
+`pandoc.write`, which runs no citeproc. Every `[@key]` in a note was printed literally as
+`{[}@key{]}`. One reported SI document lost five citations this way across three tables.
+Notes now go through the same placeholder-and-interleave path as cells, so `[@key]` and
+`@key` in a note are numbered with the rest of the document. A note with no citations
+renders exactly as before. `filters/xlsx_table.lua` → 1.0.1.
+
+Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.1,
+`paperbell-windows` → 1.0.1, `nature-latex` → 3.0.2; bundles `response-letter` → 1.0.5,
+`response-letter-docx` → 1.1.3, `paperbell` → 1.0.2, `paperbell-windows` → 1.0.2,
+`nature-latex` → 3.0.2, `full` → 1.0.14.
 
 ## 1.2.1 — 2026-10-07
 

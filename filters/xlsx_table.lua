@@ -452,10 +452,21 @@ end
 -- directly under the table (table footnotes, e.g. markers a / b / *). Parsed as
 -- markdown so ^a^ superscripts, *emphasis* and $math$ work; falls back to escaped
 -- text if parsing fails. Returns nil when there are no notes.
+-- pandoc.write runs no citeproc, so each Cite is swapped for an ASCII sentinel
+-- the latex writer passes through untouched, then turned into a \1N\1
+-- placeholder stashed in CITES like a cell citation (build_table has already
+-- reset CITES for this table, so cells and notes share one numbering).
 local function notes_block(notes)
 	if not notes or notes == "" then return nil end
 	local ok, latex = pcall(function()
-		return pandoc.write(pandoc.read(notes, "markdown"), "latex")
+		local doc = pandoc.read(notes, "markdown"):walk({
+			Cite = function(el)
+				CITES.n = CITES.n + 1
+				CITES[CITES.n] = { el }
+				return pandoc.Str("XLSXCITE" .. CITES.n .. "XLSXCITE")
+			end,
+		})
+		return (pandoc.write(doc, "latex"):gsub("XLSXCITE(%d+)XLSXCITE", "\1%1\1"))
 	end)
 	local body = (ok and latex) and latex:gsub("%s+$", "") or escape_plain(notes)
 	return "\\par\\vspace{0.5ex}{\\footnotesize\\raggedright " .. body .. "\\par}"
