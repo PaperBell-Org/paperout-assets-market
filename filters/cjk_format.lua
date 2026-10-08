@@ -13,10 +13,11 @@
 
   "中文语境"按段落判断，不按单个 Str：
     一段行内文字（Para / Plain / Header / 表格单元格 / 脚注里的一段 / 元数据里的一串）
-    只要含一个汉字，整段都算中英混排，规则 5 和规则 3 转换后的补空格才生效。
+    只要含一个汉字，整段都算中英混排，规则 5 的补空格才生效。
+    （规则 3 转出的半角标点后总是补空格：全角标点自带字距，转成半角得补回来。）
     pandoc 按空格切 Str，混排段落里的英文串（中文说明 Hello,world）通常自成一个
     不含汉字的 Str —— 按 Str 判断恰好会漏掉这个 filter 存在的理由。
-    全英文段落原样通过：邮箱、DOI、裸域名（example.org/page）都不会被拆。
+    全英文段落里的半角文字原样通过：邮箱、DOI、裸域名（example.org/page）都不会被拆。
     脚注自成一段，按自己的内容判断，不继承正文的语境。
 
   混排段落里的保护：
@@ -161,8 +162,9 @@ local function process_str(s, han_context)
         if out[#out] == " " then out[#out] = nil end
         local half = FULL2HALF_CP[cp]
         out[#out+1] = half
-        -- 英文标点后补空格：与规则 5 同一守卫，只在含汉字的段落里补
-        if han_context and nxt and is_alnum(nxt) and NEED_SPACE_AFTER[string.byte(half)] then
+        -- 转出来的英文标点后补空格：全角标点自带字距，转成半角就得补上，
+        -- 全英文段落也一样（English，full → English, full）；原本就是半角的标点不动
+        if nxt and is_alnum(nxt) and NEED_SPACE_AFTER[string.byte(half)] then
           if not (is_digit(nxt) and (half == "." or half == ",")) then
             out[#out+1] = " "
           end
