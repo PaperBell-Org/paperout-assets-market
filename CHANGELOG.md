@@ -117,6 +117,32 @@ this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 `filters/cover_letter.lua` → 1.0.1, `templates/cover_letter.latex` → 1.1.0; recipe and
 bundle `cover_letter` → 1.1.0.
 
+**Tooling: Word masters no longer depend on the installed pandoc.** Closes #24 and #16.
+`templates/manuscript-reference.docx` and `templates/response-letter-reference.docx` are now
+patched from pandoc 3.10.1's `reference.docx`, vendored at `scripts/reference-base/`, rather
+than from whichever pandoc is on `PATH`. Their `--check` needs no pandoc and cannot turn
+every open PR red on a pandoc bump. Moving to a newer base is an explicit commit via
+`npm run vendor:pandoc-reference`.
+
+- The two generators share their CLI, comparison and `styles.xml` patching through
+  `scripts/lib/docx.mjs`.
+- Every patch fails loudly if it misses.
+- `--check` names every differing part, including count and order.
+- Unknown arguments are rejected (`--help` no longer writes), and a corrupt master can be
+  regenerated in place.
+- `readZip` checks CRCs.
+- New tests cover the zip round-trip, the generator CLI, and each master's font, size,
+  spacing, margins and text colours.
+
+CI:
+- The PR scope gate runs in its own quick workflow, so adding a label no longer re-runs the
+  full suite.
+- Runs are grouped per PR and cancel superseded ones.
+- `check-versions` runs on PRs and also covers `catalog/assets.yaml`.
+- The `core-change` label is matched exactly (`not-core-change` no longer passes).
+
+No shipped asset changed; both masters are byte-identical.
+
 Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
 `paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3,
 `demo-obsidian` → 1.0.2, `pdf` → 1.0.2, `cover_letter` → 1.1.0; bundles `response-letter` → 1.0.6,
