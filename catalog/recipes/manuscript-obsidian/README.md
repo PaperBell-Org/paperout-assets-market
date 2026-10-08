@@ -48,7 +48,7 @@ Everything below lives in `templates/manuscript-reference.docx` — the filters 
 | Tables | `Table` | Three-line (booktabs-style): rule above, rule under the header row, rule below; columns normalised to full text width |
 | References | `Bibliography` | Left (not justified — long DOIs in a justified line open ugly gaps), double-spaced, 0.5-inch hanging indent, under a `References` heading |
 
-Cross-references read `Figure 1` / `Figures 1, 2` / `Table 1`, matching what a journal expects; equation references stay at pandoc-crossref's `eq. 1`.
+Cross-references read `Figure 1` / `Figures 1, 2` / `Table 1`, matching what a journal expects; equation references read `(1)`, from the shipped `crossref.yaml`.
 
 Two things the master cannot decide on its own: whether figures and tables sit inline or at the end (`figures-at-end` / `tables-at-end`, see Options), and the paper size — changing that means editing the master's `sectPr` **and** `docxPage` in `defaults/manuscript-obsidian.yaml` together, see Customization.
 

@@ -80,6 +80,16 @@ filters/demo-docx.lua:
       with the reference-doc custom styles (a demo build that skips
       authors/affiliations).
     zh: 把 YAML 的标题、摘要、关键词按 Word 模板样式插入正文开头（展示版，跳过作者与机构）。
+filters/crossref_yaml_path.lua:
+  version: 1.0.0
+  title:
+    en: crossref.yaml path fix
+    zh: crossref.yaml 路径展开
+  description:
+    en: Expands ${USERDATA} in the crossrefYaml metadata value, which pandoc leaves
+      literal, so pandoc-crossref actually reads the shipped crossref.yaml instead of
+      silently using its built-in prefixes.
+    zh: 展开 metadata 里 crossrefYaml 的 ${USERDATA}（pandoc 不展开），让 pandoc-crossref 真正读到随包的 crossref.yaml，而不是静默退回内置前缀。
 filters/div.lua:
   version: 1.1.0
   title:
