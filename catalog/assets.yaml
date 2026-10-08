@@ -46,10 +46,13 @@ filters/cjk_format.lua:
     zh: 中英混排排版
   description:
     en: Auto-typesets mixed Chinese/English text, inserting spacing between Han and
-      alphanumerics and converting half/full-width punctuation by context. Skips
-      code, math, and machine-readable tokens (emails, URLs, DOIs); leaves
-      all-Latin text untouched.
-    zh: 中英文混排自动排版：汉字与字母数字间补空格，按语境在半角/全角标点间转换（跳过代码、公式，以及邮箱/URL/DOI 这类机器可读记号；纯英文段落原样通过）。
+      alphanumerics and converting half/full-width punctuation by context. The
+      Latin-punctuation spacing (Hello,world → Hello, world) applies per paragraph,
+      only to paragraphs that contain Han, so English paragraphs pass through
+      unchanged. Code, math, emails, URLs, DOIs and dotted names (example.org,
+      config.yaml) are never split; an email inside Chinese text still gets spaced
+      from the Han around it.
+    zh: 中英文混排自动排版：汉字与字母数字间补空格，按语境在半角/全角标点间转换。英文标点后补空格（Hello,world → Hello, world）按段落判断，只作用于含汉字的段落，纯英文段落原样通过；代码、公式、邮箱/URL/DOI 和点分名称（example.org、config.yaml）内部不动，夹在中文里的邮箱照常与两侧汉字隔开空格。
 filters/codeblock.lua:
   version: 1.0.0
   title:
