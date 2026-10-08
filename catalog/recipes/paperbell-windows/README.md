@@ -4,7 +4,7 @@
 
 ![preview](preview.png)
 
-> Preview is a placeholder — replace `preview.png` with a real render of the sample output.
+> Preview is a placeholder: this recipe needs the Windows CJK fonts (SimSun …). Run `npm run mk:previews paperbell-windows` on a machine that has them.
 
 ## When to use
 
