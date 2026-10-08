@@ -63,7 +63,7 @@ filters/codeblock.lua:
       yielding TikZ figures and algorithm pseudocode.
     zh: 把 Obsidian 插件代码块（tikz、pseudo）转成裸 LaTeX（TikZ 图、algorithm 伪代码）。
 filters/cover_letter.lua:
-  version: 1.0.0
+  version: 1.0.1
   title:
     en: Cover-letter metadata injection
     zh: 投稿信元数据
@@ -351,7 +351,7 @@ templates/base.tex:
     zh: header-includes 用的 LaTeX 前导片段，加载作者私有的数学/伪代码宏包（cleveref、natbib、subfig
       及自定义宏），路径写死到某台机器。
 templates/cover_letter.latex:
-  version: 1.0.1
+  version: 1.1.0
   title:
     en: Cover-letter template
     zh: 投稿信模板
