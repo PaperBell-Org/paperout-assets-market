@@ -61,7 +61,8 @@ Prior work established the baseline [@knuth1984]. See @fig:demo, @tbl:demo and
 prefix. ==Highlighted text== exercises the `mark` extension. ^para-one
 
 Addresses must survive the CJK typesetting filter untouched: write to
-ada@example.org, or resolve doi:10.5555/example.2024 directly.
+ada@example.org, or resolve doi:10.5555/example.2024 directly. %% an inline note
+mid-paragraph, also private %% A sentence after it must survive.
 
 %% A private drafting note that must never reach a collaborator. %%
 

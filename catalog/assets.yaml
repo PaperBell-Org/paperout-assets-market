@@ -81,14 +81,14 @@ filters/demo-docx.lua:
       authors/affiliations).
     zh: 把 YAML 的标题、摘要、关键词按 Word 模板样式插入正文开头（展示版，跳过作者与机构）。
 filters/div.lua:
-  version: 1.0.0
+  version: 1.1.0
   title:
     en: Hidden Divs
     zh: 隐藏 Div
   description:
-    en: Drops Divs with class hidden and turns %% … %% inline-comment spans into
-      hidden Divs.
-    zh: 删除 class 为 hidden 的 Div，并把 %% … %% 行内注释转成 hidden Div。
+    en: Drops Divs with class hidden and strips Obsidian %% … %% comments, whether
+      they fill a paragraph or sit mid-sentence; an unpaired %% is left as written.
+    zh: 删除 class 为 hidden 的 Div，并删掉 Obsidian 的 %% … %% 批注（整段或句中均可）；不成对的 %% 原样保留。
 filters/figures-at-end.lua:
   version: 1.0.0
   title:

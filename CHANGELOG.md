@@ -44,10 +44,25 @@ Notes now go through the same placeholder-and-interleave path as cells, so `[@ke
 `@key` in a note are numbered with the rest of the document. A note with no citations
 renders exactly as before. `filters/xlsx_table.lua` → 1.0.1.
 
-Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.1,
-`paperbell-windows` → 1.0.1, `nature-latex` → 3.0.2; bundles `response-letter` → 1.0.5,
-`response-letter-docx` → 1.1.3, `paperbell` → 1.0.2, `paperbell-windows` → 1.0.2,
-`nature-latex` → 3.0.2, `full` → 1.0.14.
+**Mid-paragraph `%% … %%` comments are stripped.** Closes #18. `filters/div.lua` only
+removed a comment that filled a whole paragraph, because it checked the paragraph's first
+and last word. A note written mid-sentence, as Obsidian users usually write them, was kept
+and reached the exported Word or PDF file. That is the Word file sent to co-authors on the
+`manuscript-obsidian` route, which its README promises keeps drafting notes out. The filter
+now pairs the markers per paragraph, list item or heading, in reading order through any
+formatting: tight (`%%note%%`), spaced, spanning a soft line break, opening inside
+`**bold**` and closing after it, or several per paragraph. A paragraph that was only a
+comment is dropped, as before, and so is a list item that was only a comment; other
+empty blocks are left alone. A paragraph with an odd number of `%%` (e.g. `50%%`) is left
+as written rather than swallowing the rest of it, and `%%` inside inline code is
+untouched. A comment spanning a blank line is still not recognised. The
+`manuscript-obsidian` sample gained an inline comment. `filters/div.lua` → 1.1.0.
+
+Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.2,
+`paperbell-windows` → 1.0.2, `nature-latex` → 3.0.3, `manuscript-obsidian` → 1.3.1,
+`pdf` → 1.0.1; bundles `response-letter` → 1.0.5, `response-letter-docx` → 1.1.3,
+`paperbell` → 1.0.3, `paperbell-windows` → 1.0.3, `nature-latex` → 3.0.3,
+`manuscript-obsidian` → 1.3.1, `pdf` → 1.0.2, `full` → 1.0.15.
 
 ## 1.2.1 — 2026-10-07
 
