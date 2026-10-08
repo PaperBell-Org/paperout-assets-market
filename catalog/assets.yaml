@@ -40,7 +40,7 @@ filters/callout.lua:
     zh: 把 Obsidian 标注转成 LaTeX 的 tcolorbox 彩框或定理类环境（definition/theorem/proof 等），并用块
       ID 作 \label。
 filters/cjk_format.lua:
-  version: 1.0.1
+  version: 1.0.2
   title:
     en: CJK/Latin mixed typesetting
     zh: 中英混排排版
