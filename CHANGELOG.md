@@ -49,10 +49,13 @@ removed a comment that filled a whole paragraph, because it checked the paragrap
 and last word. A note written mid-sentence, as Obsidian users usually write them, was kept
 and reached the exported Word or PDF file. That is the Word file sent to co-authors on the
 `manuscript-obsidian` route, which its README promises keeps drafting notes out. The filter
-now scans each run of inlines for paired markers: tight (`%%note%%`), spaced, spanning a
-soft line break, inside emphasis, or several per paragraph. A paragraph that was only a
-comment is dropped, as before. An unpaired `%%` (e.g. `50%%`) is left as written rather
-than swallowing the rest of the paragraph, and `%%` inside inline code is untouched. The
+now pairs the markers per paragraph, list item or heading, in reading order through any
+formatting: tight (`%%note%%`), spaced, spanning a soft line break, opening inside
+`**bold**` and closing after it, or several per paragraph. A paragraph that was only a
+comment is dropped, as before, and so is a list item that was only a comment; other
+empty blocks are left alone. A paragraph with an odd number of `%%` (e.g. `50%%`) is left
+as written rather than swallowing the rest of it, and `%%` inside inline code is
+untouched. A comment spanning a blank line is still not recognised. The
 `manuscript-obsidian` sample gained an inline comment. `filters/div.lua` → 1.1.0.
 
 Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.2,
