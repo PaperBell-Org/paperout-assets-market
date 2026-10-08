@@ -174,6 +174,14 @@ const STYLES = {
     `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
     `<w:rPr><w:i w:val="0"/><w:b/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>`),
 
+  // Notes under a table (xlsx_table.lua's `notes:` field): the caption's 9 pt, not
+  // bold, tight to the table above.
+  TableNote: para('TableNote', 'Table Note',
+    `<w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/>` +
+    `<w:pPr><w:spacing w:before="60" w:after="200" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
+    `<w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr>`,
+    { added: true }),
+
   // Character styles for the hanging labels, so the filter never hard-codes a colour.
   // Deliberately no <w:sz>: the same label styles are used in the 11 pt body and in
   // the 9 pt legend, so they have to inherit the size of whatever line they sit on.
@@ -188,7 +196,7 @@ const STYLES = {
 const ADDED = [
   'Compact', 'LetterKicker', 'Journal', 'Legend',
   'ReviewerComment', 'ReviewerCommentCont', 'AuthorResponse', 'AuthorResponseCont',
-  'ManuscriptQuoteTitle', 'ManuscriptQuote',
+  'ManuscriptQuoteTitle', 'ManuscriptQuote', 'TableNote',
   'RCLabel', 'ARLabel', 'ManuscriptLocator',
 ];
 

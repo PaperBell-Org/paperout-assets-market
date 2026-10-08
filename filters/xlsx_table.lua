@@ -27,7 +27,13 @@
 
   No external dependency: an .xlsx is a zip of XML, cracked here with the
   built-in `pandoc.zip` module (pandoc 3.0+). Values only; first row = bold
-  header + \midrule. CJK passes through verbatim for xeCJK. PDF/LaTeX route only.
+  header + \midrule. CJK passes through verbatim for xeCJK.
+
+  Non-LaTeX output (docx, odt, html, …) gets a native pandoc Table instead —
+  raw LaTeX would be dropped by those writers and the table would vanish. See
+  build_native: caption from `caption:`, identifier from `label:` (so
+  pandoc-crossref numbers it), relative column widths, cells/caption/notes read
+  as markdown, `notes:` as a `Table Note`-styled paragraph under the table.
 
   Citations: a cell may contain pandoc citations (`[@key]`, `@key`) just like in
   the note body — they are resolved by the normal citeproc pass (correct numbers
@@ -442,7 +448,11 @@ end
 -- overflows its cell), plus a fixed allowance per column (each p{} gives up
 -- 2\tabcolsep, which a narrow column such as `Exo.` feels far more than a wide
 -- one). Fractions sum to 1, so the table spans exactly the line width.
-local function fit_spec(rows, ncol, cfg)
+--
+-- content_shares returns those fractions (nil when the widest row fits the line
+-- as natural columns, unless `force`) and the per-column numeric flags; the
+-- native (Word) branch uses the same shares as relative column widths.
+local function content_shares(rows, ncol, cfg, force)
 	local natural, word, numeric, total = {}, {}, {}, 0
 	for j = 1, ncol do
 		local n, w = 0, 0
@@ -460,7 +470,7 @@ local function fit_spec(rows, ncol, cfg)
 		total = total + n + COL_PAD
 	end
 	local line = line_chars(cfg)
-	if total <= line then return auto_align(rows, ncol) end
+	if total <= line and not force then return nil, numeric end
 
 	-- Share the line by weight, but never give a column less than its floor:
 	-- columns whose share falls short are pinned at the floor and the rest of
@@ -495,6 +505,12 @@ local function fit_spec(rows, ncol, cfg)
 			end
 		until not changed
 	end
+	return share, numeric
+end
+
+local function fit_spec(rows, ncol, cfg)
+	local share, numeric = content_shares(rows, ncol, cfg)
+	if not share then return auto_align(rows, ncol) end
 	local out = {}
 	for j = 1, ncol do out[j] = p_column(share[j], numeric[j]) end
 	return table.concat(out)
@@ -637,12 +653,10 @@ local function notes_block(notes)
 	return "\\par\\vspace{0.5ex}{\\footnotesize\\raggedright " .. body .. "\\par}"
 end
 
-local function build_table(rows, ncol, colwidths, default_w, cfg)
-	CITES = { n = 0 }                                  -- reset per table
-	local align, widths = cfg.align, cfg.widths
-
-	-- skip_n: drop the first n rows (e.g. spreadsheet title/notes) before the
-	-- next row is taken as the header. Recompute ncol over what remains.
+-- skip_n: drop the first n rows (e.g. spreadsheet title/notes) before the next
+-- row is taken as the header. Recompute ncol over what remains. Shared by the
+-- LaTeX and the native builder.
+local function prepare_rows(rows, ncol, cfg)
 	local skip_n = tonumber(cfg.skip_n) or 0
 	for _ = 1, math.min(skip_n, #rows) do table.remove(rows, 1) end
 	if skip_n > 0 then
@@ -651,8 +665,14 @@ local function build_table(rows, ncol, colwidths, default_w, cfg)
 			for j in pairs(r) do if j > ncol then ncol = j end end
 		end
 	end
-
 	if #rows == 0 or ncol == 0 then return nil, "no data rows found (empty sheet, range, or skip_n too large)" end
+	return rows, ncol
+end
+
+local function build_table(rows, ncol, colwidths, default_w, cfg)
+	CITES = { n = 0 }                                  -- reset per table
+	local align, widths = cfg.align, cfg.widths
+
 	-- Column spec precedence: explicit `align` > explicit `widths` > Excel column
 	-- widths (for columns sized in the sheet) > automatic l/r alignment.
 	if align and align ~= "" then
@@ -753,6 +773,154 @@ local function build_table(rows, ncol, colwidths, default_w, cfg)
 	return as_block(table.concat(L, "\n"))
 end
 
+----------------------------------------------------------------- native builder
+-- Every non-LaTeX target (docx, odt, html, …) gets a real pandoc Table instead
+-- of raw LaTeX, which those writers would silently drop — the whole table would
+-- vanish. The writer then renders it natively: the reference-doc's `Table`
+-- style and fullwidth_tables.lua apply, pandoc-crossref numbers it from its
+-- identifier, and citations in cells, caption and notes reach citeproc as
+-- ordinary Cite nodes. LaTeX-only options (fontsize, placement, landscape,
+-- longtable, verbatim p{}/>{} column specs) have no native meaning and are
+-- ignored here.
+
+-- Text -> inlines. Parsed as markdown (citations, $math$, *emphasis*, ^sup^),
+-- but only when that yields a single paragraph: a cell such as `1. Intro` or
+-- `* p<0.05` would otherwise become a list, so it stays literal text instead.
+local function md_inlines(text)
+	if text == "" then return pandoc.Inlines({}) end
+	local ok, doc = pcall(pandoc.read, text, "markdown")
+	if ok then
+		if #doc.blocks == 0 then return pandoc.Inlines({}) end
+		local b = doc.blocks[1]
+		if #doc.blocks == 1 and (b.t == "Para" or b.t == "Plain") then return b.content end
+	end
+	return pandoc.Inlines(text)
+end
+
+local function native_cell(cell, decimals)
+	if not cell or cell.v == "" then return pandoc.Cell({}) end
+	local inl
+	if cell.num then
+		inl = pandoc.Inlines(fmt_number(cell.v, decimals))   -- numbers stay literal
+	else
+		inl = md_inlines(cell.v)
+	end
+	return pandoc.Cell({ pandoc.Plain(inl) })
+end
+
+-- Absolute widths (`widths: 3cm`) as a fraction of a 6.5in (A4/Letter with
+-- one-inch margins) text block, the usual Word body width.
+local UNIT_PER_LINE = { cm = 16.51, mm = 165.1, ["in"] = 6.5, pt = 468, bp = 468 }
+
+-- Relative column widths (summing to 1), or nil for every column when the
+-- table fits as natural columns (the writer then sizes them, as it does for a
+-- short markdown table). Same precedence as the LaTeX spec: `widths` > Excel
+-- column widths > content estimate. `align` only sets alignment.
+local function native_widths(rows, ncol, colwidths, default_w, cfg)
+	local widths = cfg.widths
+	if widths and widths ~= "" and not (cfg.align and cfg.align ~= "") then
+		local toks = {}
+		for t in widths:gmatch("[^%s,]+") do toks[#toks + 1] = t end
+		if #toks ~= ncol then
+			return nil, ("widths has " .. #toks .. " columns but table has " .. ncol)
+		end
+		local out, given, open = {}, 0, {}
+		for j, t in ipairs(toks) do
+			local n, unit = t:match("^(%d*%.?%d+)(%a*)$")
+			n = tonumber(n)
+			local frac
+			if n and unit == "" and n > 0 and n <= 1 then frac = n
+			elseif n and UNIT_PER_LINE[unit] then frac = n / UNIT_PER_LINE[unit] end
+			if frac then out[j], given = frac, given + frac else open[#open + 1] = j end
+		end
+		if #open > 0 then                        -- natural columns share what is left
+			local share = content_shares(rows, ncol, cfg, true)
+			local open_share = 0
+			for _, j in ipairs(open) do open_share = open_share + share[j] end
+			local left = math.max(1 - given, 0.1 * #open)
+			for _, j in ipairs(open) do out[j] = left * share[j] / open_share end
+		end
+		return out
+	end
+	if next(colwidths) ~= nil then
+		local out, total = {}, 0
+		for j = 1, ncol do
+			out[j] = colwidths[j] or default_w or 8.43
+			total = total + out[j]
+		end
+		for j = 1, ncol do out[j] = out[j] / total end
+		return out
+	end
+	return content_shares(rows, ncol, cfg) or {}
+end
+
+local NATIVE_ALIGN = { l = pandoc.AlignLeft, r = pandoc.AlignRight, c = pandoc.AlignCenter }
+
+local function build_native(rows, ncol, colwidths, default_w, cfg)
+	local align = cfg.align or ""
+	if align:match("^[lrc]+$") and #align ~= ncol then
+		return nil, ("align has " .. #align .. " columns but table has " .. ncol)
+	end
+	local widths, err = native_widths(rows, ncol, colwidths, default_w, cfg)
+	if not widths then return nil, err end
+
+	local colspecs = {}
+	for j = 1, ncol do
+		local a = align:match("^[lrc]+$") and NATIVE_ALIGN[align:sub(j, j)]
+			or (numeric_column(rows, j) and pandoc.AlignRight or pandoc.AlignDefault)
+		colspecs[j] = { a, widths[j] }                -- nil width = ColWidthDefault
+	end
+
+	local function row_of(r)
+		local cells = {}
+		for j = 1, ncol do cells[j] = native_cell(r[j], cfg.decimals) end
+		return pandoc.Row(cells)
+	end
+	local body = {}
+	for i = 2, #rows do body[#body + 1] = row_of(rows[i]) end
+
+	-- Caption and identifier: pandoc-crossref numbers a Table whose identifier
+	-- is `tbl:…`. A `number:` (injected by manuscript_include when a response
+	-- letter quotes a manuscript table) is the source table's real number, so
+	-- it is written into the caption and the identifier dropped — otherwise
+	-- crossref would renumber the table as the letter's own. data-mstbl tells
+	-- responseletter-docx.lua the table is already numbered (no R number).
+	local caption, label = cfg.caption or "", cfg.label or ""
+	local num = cfg.number ~= "" and cfg.number or nil
+	local cap = md_inlines(caption)
+	if num then
+		local prefix = pandoc.Inlines("Table " .. num .. (caption ~= "" and ": " or ""))
+		prefix:extend(cap)
+		cap = prefix
+	end
+	local long = #cap > 0 and { pandoc.Plain(cap) } or {}
+
+	local tbl = pandoc.Table(
+		{ long = long },
+		colspecs,
+		pandoc.TableHead({ row_of(rows[1]) }),
+		{ { attr = pandoc.Attr(), body = body, head = {}, row_head_columns = 0 } },
+		pandoc.TableFoot(),
+		pandoc.Attr(num and "" or label, {}, num and { ["data-mstbl"] = tostring(num) } or {})
+	)
+
+	-- notes: a small paragraph right under the table. It is a Div styled
+	-- `Table Note` in Word (the reference docs may define it; otherwise Word
+	-- falls back to Normal). Table and notes share a `.table` Div so
+	-- figures-at-end.lua (tables-at-end) moves them together.
+	local notes = cfg.notes
+	if not notes or notes == "" then return tbl end
+	local note = pandoc.Div({ pandoc.Para(md_inlines(notes)) },
+		pandoc.Attr("", { "xlsx-table-notes" }, { ["custom-style"] = "Table Note" }))
+	return pandoc.Div({ tbl, note }, pandoc.Attr("", { "table", "xlsx-table" }))
+end
+
+-- LaTeX and beamer, including a custom LaTeX writer named by path (`to:
+-- …/latex-submission.lua` makes FORMAT that path), keep the raw-LaTeX table.
+local function latex_target()
+	return FORMAT and (FORMAT:match("latex") or FORMAT:match("beamer")) and true or false
+end
+
 ------------------------------------------------------------------------ filter
 
 local function error_block(msg)
@@ -804,7 +972,10 @@ function CodeBlock(el)
 		if not xml then error("worksheet xml missing: " .. sheet_path) end
 
 		local rows, ncol, colwidths, default_w = parse_sheet(xml, shared_strings(entries), cfg.range)
-		local block, err = build_table(rows, ncol, colwidths, default_w, cfg)
+		local kept, n_or_err = prepare_rows(rows, ncol, cfg)
+		if not kept then error(n_or_err) end
+		local build = latex_target() and build_table or build_native
+		local block, err = build(kept, n_or_err, colwidths, default_w, cfg)
 		if not block then error(err) end
 		return block
 	end)

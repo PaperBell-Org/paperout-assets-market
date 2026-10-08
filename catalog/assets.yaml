@@ -337,8 +337,9 @@ filters/xlsx_table.lua:
     en: Turns a ```xlsx-table fence into a booktabs three-line LaTeX table by
       reading the named .xlsx sheet with the built-in pandoc.zip module (no
       external dependency), supporting caption/label, column widths, notes,
-      citations and landscape/longtable.
-    zh: 把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）。
+      citations and landscape/longtable; on non-LaTeX outputs (docx, …) it
+      builds a native table that pandoc-crossref and citeproc can process.
+    zh: 把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）；非 LaTeX 输出（docx 等）生成原生表格。
 templates/base.tex:
   version: 1.0.0
   title:

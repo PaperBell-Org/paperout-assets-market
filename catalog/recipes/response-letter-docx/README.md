@@ -47,6 +47,8 @@ Everything lives in `templates/response-letter-reference.docx`; the filter only 
 | Manuscript quote — title bar | `Manuscript Quote Title` | Arial bold 9 pt, white on a `8A949E` fill: `Manuscript` plus the locator in `Manuscript Locator` (not bold) |
 | Manuscript quote — text | `Manuscript Quote` | 10 pt on `FCFCFD`, framed left/right/bottom in `8A949E` |
 | Reviewer / topic headings | `heading 1` / `2` / `3` | Arial bold, accent |
+| Tables (` ```xlsx-table `) | `Table` / `Table Caption` | Native Word tables read from the same spreadsheet as the PDF route; columns sized from the sheet's Excel widths or the content |
+| Table notes (`notes:`) | `Table Note` | 9 pt, left-aligned, directly under the table |
 | References | `Bibliography` | 1 cm hanging indent, under a `References` heading |
 
 The locator on the title bar is built the same way the PDF builds it: `Manuscript · Page 5, Line 158–160`, `Manuscript · Figure 2`, `Supplementary Information`, or just `Manuscript` when nothing is known.
@@ -79,6 +81,8 @@ Everything that exists only for the draft is stripped on export: `**中文翻译
 
 The letter's own figures are written as ordinary markdown images. Captioned ones are numbered `Figure R1`, `Figure R2`, … (tables `Table R1`, …), as the PDF numbers them, so a figure made for the rebuttal is never confused with one from the manuscript. A figure pulled from the manuscript keeps the manuscript's number (`Figure 2`) and does not use up an R number. The number is plain caption text: refer to it by writing `Figure R1` yourself.
 
+Tables come from the same ` ```xlsx-table ` fences the PDF route uses (`file:`, `sheet:`, `caption:`, `notes:`, …). On this route `xlsx_table.lua` builds a native Word table instead of LaTeX; cells, caption and notes are read as markdown, so `[@key]` in them lands in the letter's bibliography. When the fence quotes a manuscript table (its `label:` is in `table-numbers.json`), `manuscript_include.lua` supplies the source number and the caption reads `Table S9: …`. The LaTeX-only keys (`fontsize`, `placement`, `landscape`, `longtable`, verbatim `align:` column specs) are ignored here.
+
 ### Quoting the manuscript instead of pasting it
 
 Wrap the span in the manuscript scene:
@@ -106,7 +110,6 @@ The committed master is generated, not hand-edited: `node scripts/mk-response-le
 
 ## Known gaps
 
-- ` ```xlsx-table ` blocks are not rendered on this route. `xlsx_table.lua` only builds LaTeX, so adding it to the docx chain would make tables vanish rather than appear — the fence currently stays visible as a code block.
 - Draft mode (difficulty/status badges, `\note`, the Chinese gloss) is PDF-only by design: the Word file is the one you submit.
 
 ## Attribution

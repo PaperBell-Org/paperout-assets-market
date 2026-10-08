@@ -17,14 +17,17 @@ reference-doc: "${.}/../templates/manuscript-reference.docx"
 #    否则它们会原样印进发给合作者的 Word。两者都与输出格式无关，PDF 链上一直都有。
 # 2. lineno_default —— 行号默认开（笔记里写 lineno: false 可关），与 PDF 链一致；
 #    投稿稿和给合作者批注的稿子都需要行号。
-# 3. pandoc-crossref 处理图、表、公式编号与交叉引用
-# 4. manuscript-docx.lua 用母版的命名样式排出标题/作者/单位/通讯/摘要/关键词抬头
-# 5. citeproc 处理正文与插入内容中的文献引用（含摘要内引用）
-# 6. 后续 Lua 做图表后置、行号注入、空格/标点清洗、表格宽度
+# 3. xlsx_table —— ```xlsx-table 块 → 原生 Word 表格（label: 成为表的 #tbl: 标识，
+#    notes: 用母版的 Table Note 样式）。必须在 pandoc-crossref 之前，表才能编号、被引用
+# 4. pandoc-crossref 处理图、表、公式编号与交叉引用
+# 5. manuscript-docx.lua 用母版的命名样式排出标题/作者/单位/通讯/摘要/关键词抬头
+# 6. citeproc 处理正文与插入内容中的文献引用（含摘要内引用）
+# 7. 后续 Lua 做图表后置、行号注入、空格/标点清洗、表格宽度
 filters:
   - "${.}/../filters/div.lua"
   - "${.}/../filters/block_ids.lua"
   - "${.}/../filters/lineno_default.lua"
+  - "${.}/../filters/xlsx_table.lua"
   - "${.}/../filters/crossref_yaml_path.lua"  #! 把 crossrefYaml 里的 ${USERDATA} 展开成真实路径（metadata 不展开），必须在 pandoc-crossref 之前
   - pandoc-crossref
   - "${.}/../filters/manuscript-docx.lua"

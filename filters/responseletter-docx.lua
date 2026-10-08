@@ -429,7 +429,8 @@ end
 -- figure made for the rebuttal is never mistaken for one from the manuscript.
 -- A figure pulled from the manuscript carries data-msfig (set by
 -- manuscript_include.lua) and prints that number instead, without using up an R
--- number. Floats without a caption stay unnumbered, as \caption-less LaTeX
+-- number; likewise a quoted manuscript table marked data-mstbl by xlsx_table.lua.
+-- Floats without a caption stay unnumbered, as \caption-less LaTeX
 -- floats do. Word has no counter of its own here: the number is plain text.
 local function prefix_caption(cap, label)
   local blocks = cap.long or {}
@@ -459,6 +460,12 @@ local function number_floats(doc)
       return fig
     end,
     Table = function(tbl)
+      -- a quoted manuscript table (xlsx_table.lua, number: injected by
+      -- manuscript_include) already says "Table S9:" and must not take an R number
+      if tbl.attributes['data-mstbl'] then
+        tbl.attributes['data-mstbl'] = nil
+        return tbl
+      end
       if #(tbl.caption.long or {}) == 0 then return nil end
       ntbl = ntbl + 1
       local cap = tbl.caption

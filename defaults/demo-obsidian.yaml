@@ -12,11 +12,14 @@ reference-doc: "${.}/../templates/demo-reference.docx"
 # bibliography: "${USERDATA}/../../mybib.bib"  # (commented by sync: plugin injects --bibliography)
 
 # 过滤器顺序：
-# 1. pandoc-crossref 先处理图、表、公式编号与交叉引用
-# 2. demo-docx.lua 先把标题、摘要、关键词从 metadata 插入正文
-# 3. citeproc 再处理正文和插入内容中的文献引用
-# 4. 后续 Lua 做图表后置、行号、空格/标点清洗、表格宽度
+# 1. xlsx_table 把 ```xlsx-table 块转成原生 Word 表格（label: 成为 #tbl: 标识），
+#    必须在 pandoc-crossref 之前，表才能编号
+# 2. pandoc-crossref 处理图、表、公式编号与交叉引用
+# 3. demo-docx.lua 先把标题、摘要、关键词从 metadata 插入正文
+# 4. citeproc 再处理正文和插入内容中的文献引用
+# 5. 后续 Lua 做图表后置、行号、空格/标点清洗、表格宽度
 filters:
+  - "${.}/../filters/xlsx_table.lua"
   - pandoc-crossref
   - "${.}/../filters/demo-docx.lua"
   - citeproc
@@ -75,6 +78,7 @@ metadata:
 # 
 # 基本流程： 
 # Obsidian Markdown 文档 
+# → xlsx_table.lua 把 ```xlsx-table 块转成原生表格 
 # → pandoc-crossref 处理图表与公式编号 
 # → demo-docx.lua 插入标题、摘要和关键词
 # → citeproc 根据文献库和 CSL 样式排版引文 

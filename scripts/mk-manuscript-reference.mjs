@@ -108,6 +108,13 @@ const STYLES = {
     `<w:pPr><w:keepNext/><w:spacing w:before="240" w:after="120" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
     `<w:rPr><w:i w:val="0"/><w:b/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr></w:style>`,
 
+  // Notes under a table (xlsx_table.lua's `notes:` field): small, single-spaced and
+  // tight to the table above, with the usual paragraph gap before the text resumes.
+  TableNote: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="TableNote"><w:name w:val="Table Note"/>` +
+    `<w:basedOn w:val="Normal"/><w:next w:val="BodyText"/><w:qFormat/>` +
+    `<w:pPr><w:spacing w:before="60" w:after="240" w:line="240" w:lineRule="auto"/><w:jc w:val="left"/></w:pPr>` +
+    `<w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>`,
+
   Figure: `<w:style w:type="paragraph" w:customStyle="1" w:styleId="Figure"><w:name w:val="Figure"/>` +
     `<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="240" w:after="0" w:line="240" w:lineRule="auto"/><w:jc w:val="center"/></w:pPr></w:style>`,
 
@@ -135,7 +142,7 @@ function heading(level, charStyle, sz, emphasis) {
 }
 
 // New style ids that do not exist in the base master and must be inserted.
-const ADDED = ['Affiliation', 'Corresponding', 'Keywords'];
+const ADDED = ['Affiliation', 'Corresponding', 'Keywords', 'TableNote'];
 
 // patchStylesXml (scripts/lib/docx.mjs) also pins every theme-font attribute to Times
 // and drops pandoc's themed heading colour (0F4761) from the headings and their linked
