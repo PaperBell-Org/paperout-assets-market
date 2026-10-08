@@ -143,12 +143,50 @@ CI:
 
 No shipped asset changed; both masters are byte-identical.
 
-Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
-`paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3,
-`demo-obsidian` → 1.0.2, `pdf` → 1.0.2, `cover_letter` → 1.1.0; bundles `response-letter` → 1.0.6,
-`response-letter-docx` → 1.2.0, `paperbell` → 1.0.4, `paperbell-windows` → 1.0.4,
-`nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3, `demo-obsidian` → 1.0.3,
-`pdf` → 1.0.3, `cover_letter` → 1.1.0, `full` → 1.0.19.
+**xlsx tables without Excel column widths no longer run off the page.** Closes #28. With no
+`align:`, `widths:` or Excel column widths, `filters/xlsx_table.lua` fell back to plain
+`l`/`r` columns, which never wrap, so any table with prose cells overflowed the right
+margin.
+
+The filter now estimates each column's typeset width from what the cell shows:
+`$K_{c,\mathrm{mid}}$ (–)` counts as about 9 characters rather than 24, and citations and
+CJK are accounted for. It keeps `l`/`r` only when the widest row fits. Otherwise it
+switches to the proportional wrapping `p{}` columns of the Excel-width path:
+- each column's length is damped by ^0.6;
+- no column is narrower than its longest word;
+- each column gets a fixed allowance;
+- the fractions sum to the line width.
+
+Numeric columns stay flush right. Tables with Excel widths, `widths:` or `align:` are
+unchanged. In a probe document, overfull boxes dropped from 5 (worst 683 pt) to 1, and the
+remaining one comes from an explicit `widths:` choice.
+
+**` ```xlsx-table ` now works on the Word routes.** Closes #22. `xlsx_table.lua` only emitted
+raw LaTeX, which the docx writer silently drops, so the filter could not go on any Word
+chain. On non-LaTeX outputs it now builds a native table:
+- `caption:` becomes the caption;
+- `label: tbl:x` lets pandoc-crossref number and reference it;
+- column widths come from `widths:`, the sheet's Excel widths or the content;
+- cells, caption and `notes:` are read as markdown, so citations reach citeproc;
+- notes sit under the table in a new `Table Note` style, and tables-at-end moves the two
+  together;
+- a response letter quoting a manuscript table shows the manuscript's number
+  ("Table S9: …") and does not take an R number.
+
+LaTeX, beamer and nature-latex output is byte-identical. The filter is now on
+`response-letter-docx`, `manuscript-obsidian` and `demo-obsidian`. The manuscript and
+response-letter Word masters gain the `Table Note` style (10 pt / 9 pt).
+
+`filters/xlsx_table.lua` → 1.1.0, `filters/responseletter-docx.lua` → 1.2.1,
+`templates/manuscript-reference.docx` → 1.2.0, `templates/response-letter-reference.docx`
+→ 1.1.0.
+
+Recipes `response-letter` → 1.0.5, `response-letter-docx` → 1.3.0, `paperbell` → 1.0.4,
+`paperbell-windows` → 1.0.4, `nature-latex` → 3.0.5, `manuscript-obsidian` → 1.4.0,
+`demo-obsidian` → 1.1.0, `pdf` → 1.0.2, `cover_letter` → 1.1.0; bundles `response-letter`
+→ 1.0.7, `response-letter-docx` → 1.3.0, `paperbell` → 1.0.5, `paperbell-windows` → 1.0.5,
+`nature-latex` → 3.0.5, `manuscript-obsidian` → 1.4.0, `demo-obsidian` → 1.1.0, `pdf` →
+1.0.3, `cover_letter` → 1.1.0, `full` → 1.0.20.
 
 ## 1.2.1 — 2026-10-07
 
