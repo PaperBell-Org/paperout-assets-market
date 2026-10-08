@@ -70,11 +70,22 @@ already set `figPrefix` inline now print `Figure 1` instead of `fig. 1`. The
 `manuscript-obsidian` and `nature-latex` goldens changed by exactly that one equation
 reference each.
 
-Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.3,
+**The Word response letter numbers its own figures R1, R2, ….** Closes #27. The PDF
+letter renumbers its own floats `R1`, `R2`, … so a figure made for the rebuttal is never
+confused with a manuscript figure. The Word route had no equivalent. `responseletter-docx.lua`
+now prefixes each captioned figure with `Figure R1:` and each captioned table with
+`Table R1:`, numbered in document order. A figure pulled from the manuscript is marked by
+`manuscript_include.lua` with its manuscript number (`data-msfig`) and prints `Figure 2:`
+without using up an R number, as `\addtocounter{figure}{-1}` does in the PDF. Uncaptioned
+floats stay unnumbered. The numbers are caption text, not Word fields, so there are no
+cross-reference fields to them. `filters/responseletter-docx.lua` → 1.2.0,
+`filters/manuscript_include.lua` → 1.0.3.
+
+Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
 `paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.2,
-`pdf` → 1.0.2; bundles `response-letter` → 1.0.5, `response-letter-docx` → 1.1.3,
+`pdf` → 1.0.2; bundles `response-letter` → 1.0.6, `response-letter-docx` → 1.2.0,
 `paperbell` → 1.0.4, `paperbell-windows` → 1.0.4, `nature-latex` → 3.0.4,
-`manuscript-obsidian` → 1.3.2, `pdf` → 1.0.3, `full` → 1.0.16.
+`manuscript-obsidian` → 1.3.2, `pdf` → 1.0.3, `full` → 1.0.17.
 
 ## 1.2.1 — 2026-10-07
 

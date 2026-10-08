@@ -204,7 +204,7 @@ filters/manuscript_cite.lua:
       one shared bibliography.
     zh: 把手贴 ```manuscript 引文块在 citeproc 之前展开成 Div，让块内 [@key] 进同一份参考文献。
 filters/manuscript_include.lua:
-  version: 1.0.2
+  version: 1.0.3
   title:
     en: Pull manuscript quotes
     zh: 拉取手稿原文
@@ -304,7 +304,7 @@ filters/responseletter.lua:
       \AR / \manuscript / \zh) for a XeLaTeX PDF.
     zh: Obsidian callout → \RC / \AR / \manuscript / \zh。
 filters/responseletter-docx.lua:
-  version: 1.1.1
+  version: 1.2.0
   title:
     en: Response letter to docx
     zh: 回复信转 docx
