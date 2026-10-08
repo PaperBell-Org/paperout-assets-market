@@ -8,12 +8,13 @@ const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const read = (f) => fs.readFileSync(path.join(ROOT, 'defaults', f), 'utf8');
 
 describe('parseDefaults', () => {
-  it('derives paperbell requires (16 filters + template + crossref = 18)', () => {
+  it('derives paperbell requires (17 filters + template + crossref = 19)', () => {
     const p = parseDefaults(read('paperbell.yaml'));
-    expect(p.requires).toHaveLength(18);
+    expect(p.requires).toHaveLength(19);
     expect(p.requires).toContain('templates/paperbell.latex');
     expect(p.requires).toContain('defaults/crossref.yaml');
-    expect(p.requires.filter((r) => r.startsWith('filters/'))).toHaveLength(16);
+    expect(p.requires).toContain('filters/crossref_yaml_path.lua');
+    expect(p.requires.filter((r) => r.startsWith('filters/'))).toHaveLength(17);
     expect(p.systemDeps.sort()).toEqual(['citeproc', 'pandoc-crossref']);
     expect(p.hasActiveCsl).toBe(false); // csl is commented out
     expect(p.hasActiveBibliography).toBe(false);

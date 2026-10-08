@@ -48,6 +48,7 @@ filters:
   - ${USERDATA}/filters/shift_headings.lua
   - ${USERDATA}/filters/link.lua
   - ${USERDATA}/filters/highlight.lua
+  - ${USERDATA}/filters/crossref_yaml_path.lua  #! 把 crossrefYaml 里的 ${USERDATA} 展开成真实路径（metadata 不展开），必须在 pandoc-crossref 之前
   - ${USERDATA}/filters/crossref-latex.lua
   - ${USERDATA}/filters/figures-at-end.lua
 

@@ -58,11 +58,26 @@ as written rather than swallowing the rest of it, and `%%` inside inline code is
 untouched. A comment spanning a blank line is still not recognised. The
 `manuscript-obsidian` sample gained an inline comment. `filters/div.lua` → 1.1.0.
 
-Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.2,
-`paperbell-windows` → 1.0.2, `nature-latex` → 3.0.3, `manuscript-obsidian` → 1.3.1,
-`pdf` → 1.0.1; bundles `response-letter` → 1.0.5, `response-letter-docx` → 1.1.3,
-`paperbell` → 1.0.3, `paperbell-windows` → 1.0.3, `nature-latex` → 3.0.3,
-`manuscript-obsidian` → 1.3.1, `pdf` → 1.0.2, `full` → 1.0.15.
+**`defaults/crossref.yaml` finally takes effect.** Closes #15. Six defaults set
+`crossrefYaml: ${USERDATA}/defaults/crossref.yaml` (`paperbell`, `paperbell-windows`, `pdf`,
+`undefined`, `manuscript-obsidian`, `nature-latex`; the issue listed five). pandoc expands
+`${USERDATA}` only in path keys, never in a `metadata:` value, so pandoc-crossref received the
+literal string and silently fell back to its built-ins. The repo's own invariants forbid any
+path form pandoc *would* expand there, so the yaml alone could not fix it.
+
+A new `filters/crossref_yaml_path.lua` runs just before pandoc-crossref (before
+`crossref-latex.lua` on `nature-latex`) and expands the variable to pandoc's user data
+directory. **Visible change:** equation references now print as `(1)`, per
+`eqnPrefixTemplate`, instead of pandoc-crossref's default `eq. 1`. Routes that did not
+already set `figPrefix` inline now print `Figure 1` instead of `fig. 1`. The
+`manuscript-obsidian` and `nature-latex` goldens changed by exactly that one equation
+reference each.
+
+Recipes `response-letter` → 1.0.3, `response-letter-docx` → 1.1.3, `paperbell` → 1.0.3,
+`paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.2,
+`pdf` → 1.0.2; bundles `response-letter` → 1.0.5, `response-letter-docx` → 1.1.3,
+`paperbell` → 1.0.4, `paperbell-windows` → 1.0.4, `nature-latex` → 3.0.4,
+`manuscript-obsidian` → 1.3.2, `pdf` → 1.0.3, `full` → 1.0.16.
 
 ## 1.2.1 — 2026-10-07
 
