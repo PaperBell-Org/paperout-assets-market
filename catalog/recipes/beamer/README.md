@@ -4,8 +4,6 @@
 
 ![preview](preview.png)
 
-> Preview is a placeholder — replace `preview.png` with a real render of the sample output.
-
 ## When to use
 
 Turning notes into a slide deck.

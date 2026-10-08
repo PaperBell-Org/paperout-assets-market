@@ -4,8 +4,6 @@
 
 ![preview](preview.png)
 
-> Preview is a placeholder — replace `preview.png` with a real render of the sample output.
-
 ## When to use
 
 The main preset for a full manuscript export with cross-refs, line numbers and citations.

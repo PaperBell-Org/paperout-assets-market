@@ -4,7 +4,7 @@
 
 ![preview](preview.png)
 
-> Preview is a placeholder — replace `preview.png` with a real render of the sample output.
+> Preview is a placeholder: Word output needs LibreOffice to render. Run `npm run mk:previews response-letter-docx` on a machine that has `soffice`.
 
 ## When to use
 

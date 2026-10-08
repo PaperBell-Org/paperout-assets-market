@@ -18,6 +18,7 @@
     "mk:response-letter-reference": "node scripts/mk-response-letter-reference.mjs",
     "vendor:pandoc-reference": "node scripts/vendor-pandoc-reference.mjs",
     "build:recipe": "node scripts/build-recipe.mjs",
+    "mk:previews": "node scripts/mk-previews.mjs",
     "test": "vitest run"
   },
   "dependencies": {

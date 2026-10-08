@@ -123,6 +123,14 @@ covers this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 `filters/cover_letter.lua` → 1.0.1, `templates/cover_letter.latex` → 1.1.0; recipe and
 bundle `cover_letter` → 1.1.0.
 
+**Real recipe previews.** Refs #25. All nine `preview.png` files were the same 70-byte
+placeholder. The new `scripts/mk-previews.mjs` (`npm run mk:previews [<id>…]`) renders a
+recipe's sample and saves page 1 as an 800 px PNG. It is run by hand, not in CI, because
+the result depends on the local TeX install and fonts. Six recipes now have a real preview:
+`beamer`, `cover_letter`, `nature-latex`, `paperbell`, `pdf` and `response-letter`. The
+three Word recipes need LibreOffice to render, and `paperbell-windows` needs the Windows
+CJK fonts; their READMEs say so. Previews are not part of any bundle, so no version moves.
+
 **Tooling: Word masters no longer depend on the installed pandoc.** Closes #24 and #16.
 `templates/manuscript-reference.docx` and `templates/response-letter-reference.docx` are now
 patched from pandoc 3.10.1's `reference.docx`, vendored at `scripts/reference-base/`, rather
