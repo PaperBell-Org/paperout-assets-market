@@ -5,7 +5,7 @@
 ##
 ## 变量约定：${.} = 本 defaults 目录；${USERDATA} = data-dir = pandoc 目录。
 ## logo / 签名 / reviewers.csv 放在 templates/cover_letter/，
-## 靠插件 env 的 TEXINPUTS 指向 templates/ 被 XeLaTeX 找到（零安装）。
+## 由 cover_letter.lua 注入的 AssetDir 定位（不依赖 TEXINPUTS）。
 
 standalone: true
 embed-resources: true
@@ -36,13 +36,18 @@ metadata:
   link-citations: true
 
 variables:
-  ## 静态作者身份（metadata.json 里没有这些字段，故写死；改人换机构时改这里）
-  AuthorInstitution: "Max Planck Institute of Geoanthropology"
-  AuthorAddress: "Kahlaische Strasse 10, 07745 Jena, Germany"
-  AuthorPhone: "+491784979062"
-  AuthorOrcid: "0000-0002-8112-8780"
-  ## assets 只写文件名；绝对目录由 cover_letter.lua 注入的 AssetDir + 模板 \graphicspath 解析
-  LogoPath: "MPI-GEA_logo.pdf"
+  ## 静态作者身份（metadata.json 里没有这些字段）。下面是【占位】，请改成你自己的；
+  ## 注意：这里的 variables 优先级高于笔记 frontmatter，所以要在本文件里改。
+  ## AuthorPhone / AuthorOrcid 可选：留注释（不设）即不打印该行。
+  AuthorInstitution: "Your Institution"
+  AuthorAddress: "Street 1, 00000 City, Country"
+  # AuthorPhone: "+00 000 0000000"
+  # AuthorOrcid: "0000-0000-0000-0000"
+  ## assets 只写文件名，放在 templates/cover_letter/（vault 里默认 PaperBell/pandoc/templates/cover_letter/）；
+  ## 绝对目录由 cover_letter.lua 注入的 AssetDir 解析。文件不存在时模板静默跳过 logo / 签名。
+  ## 随资产包发的 letterhead.pdf / signature.png 是空白占位；建议用你自己的文件名（更新资产包会覆盖同名文件），
+  ## 再把下面两行指向它。详见 templates/cover_letter/README.md。
+  LogoPath: "letterhead.pdf"
   LogoScale: "0.80"
-  SignaturePath: "Song_signature.png"
+  SignaturePath: "signature.png"
   MaxReviewers: "5"

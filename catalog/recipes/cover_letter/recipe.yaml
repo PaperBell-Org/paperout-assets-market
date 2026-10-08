@@ -10,6 +10,7 @@ description:
   zh: 投稿/修订投稿信导出 PDF，基于 moderncv + xeCJK；标题、期刊、通讯作者从笔记的 metadata.json 填充。
 tier: core
 extraFiles:
-  - templates/cover_letter/MPI-GEA_logo.pdf
-  - templates/cover_letter/Song_signature.png
+  - templates/cover_letter/letterhead.pdf
+  - templates/cover_letter/signature.png
+  - templates/cover_letter/reviewers.example.csv
   - templates/cover_letter/README.md
