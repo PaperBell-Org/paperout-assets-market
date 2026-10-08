@@ -422,6 +422,57 @@ end
 -- main pass: walk the flat block list, rebuild with native blocks (docx)
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- float numbering — mirrors responseletter.sty's \thefigure → R\arabic{figure}
+-- ---------------------------------------------------------------------------
+-- The letter's own figures/tables become "Figure R1: …" / "Table R1: …", so a
+-- figure made for the rebuttal is never mistaken for one from the manuscript.
+-- A figure pulled from the manuscript carries data-msfig (set by
+-- manuscript_include.lua) and prints that number instead, without using up an R
+-- number. Floats without a caption stay unnumbered, as \caption-less LaTeX
+-- floats do. Word has no counter of its own here: the number is plain text.
+local function prefix_caption(cap, label)
+  local blocks = cap.long
+  local lead = pandoc.List{ pandoc.Str(label .. ':'), pandoc.Space() }
+  local first = blocks[1]
+  if first and (first.t == 'Plain' or first.t == 'Para') then
+    first.content = lead .. first.content
+  else
+    -- a caption opening with a list or div still gets its number, so the R count
+    -- never skips one
+    blocks:insert(1, pandoc.Plain(lead))
+  end
+end
+
+local function number_floats(doc)
+  local nfig, ntbl = 0, 0
+  local NBSP = utf8.char(0x00A0)
+  return doc:walk({
+    Figure = function(fig)
+      local ms = fig.attributes['data-msfig']
+      fig.attributes['data-msfig'] = nil
+      local num = ms
+      if not num then
+        if #(fig.caption.long or {}) == 0 then return fig end
+        nfig = nfig + 1
+        num = 'R' .. nfig
+      end
+      local cap = fig.caption
+      prefix_caption(cap, 'Figure' .. NBSP .. num)
+      fig.caption = cap
+      return fig
+    end,
+    Table = function(tbl)
+      if #(tbl.caption.long or {}) == 0 then return nil end
+      ntbl = ntbl + 1
+      local cap = tbl.caption
+      prefix_caption(cap, 'Table' .. NBSP .. 'R' .. ntbl)
+      tbl.caption = cap
+      return tbl
+    end,
+  })
+end
+
 function Pandoc(doc)
   local meta = normalize_meta(doc.meta)
   local out = letterhead(meta)
@@ -609,5 +660,5 @@ function Pandoc(doc)
     end
   end
 
-  return pandoc.Pandoc(out, meta)
+  return number_floats(pandoc.Pandoc(out, meta))
 end

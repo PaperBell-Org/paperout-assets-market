@@ -77,7 +77,7 @@ Callout aliases: `reviewer` / `rc` / `quote` / `comment` / `question` for commen
 
 Everything that exists only for the draft is stripped on export: `**中文翻译：**` paragraphs, `%% … %%` and `<!-- … -->` comments, `#TODO` lines, *Evidence* notes, `{difficulty=… status=…}` markers and `![[embeds]]`.
 
-The letter's own figures are written as ordinary markdown images; they are numbered by Word, not by the manuscript's numbering.
+The letter's own figures are written as ordinary markdown images. Captioned ones are numbered `Figure R1`, `Figure R2`, … (tables `Table R1`, …), as the PDF numbers them, so a figure made for the rebuttal is never confused with one from the manuscript. A figure pulled from the manuscript keeps the manuscript's number (`Figure 2`) and does not use up an R number. The number is plain caption text: refer to it by writing `Figure R1` yourself.
 
 ### Quoting the manuscript instead of pasting it
 
@@ -107,7 +107,6 @@ The committed master is generated, not hand-edited: `node scripts/mk-response-le
 ## Known gaps
 
 - ` ```xlsx-table ` blocks are not rendered on this route. `xlsx_table.lua` only builds LaTeX, so adding it to the docx chain would make tables vanish rather than appear — the fence currently stays visible as a code block.
-- The letter's own figures are not renumbered `R1`, `R2`, … the way the PDF does; pandoc-crossref is not on this chain.
 - Draft mode (difficulty/status badges, `\note`, the Chinese gloss) is PDF-only by design: the Word file is the one you submit.
 
 ## Attribution
