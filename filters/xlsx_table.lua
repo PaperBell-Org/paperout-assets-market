@@ -35,8 +35,11 @@
 
   Column widths: with neither `align` nor `widths`, if any column was sized in
   Excel the whole table uses those Excel widths *proportionally*, normalised to
-  the line width (a sheet that fits one page in Excel fits here too); otherwise
-  columns auto-size (l/r). Merged cells render as their value in the first row
+  the line width (a sheet that fits one page in Excel fits here too). Otherwise
+  the filter estimates each column's typeset width from its content: a table
+  whose widest row fits the line keeps natural l/r columns, and one that would
+  run past the margin gets proportional wrapping p{} columns sized from the
+  content (see fit_spec), so it fits the line. Merged cells render as their value in the first row
   with the spanned rows blank. The table body is one step smaller than the body
   font, and numeric float noise (0.20999…) is cleaned (see `decimals`).
 
@@ -287,44 +290,33 @@ end
 -- prefix that makes a p{} column wrap (ragged-right) instead of justifying.
 local WRAP = "\\raggedright\\arraybackslash"
 
+-- A column is numeric when every non-blank body cell (header row skipped) is.
+local function numeric_column(rows, j)
+	local any = false
+	for i = 2, #rows do
+		local cell = rows[i][j]
+		if cell and cell.v ~= "" then
+			any = true
+			if not cell.num then return false end
+		end
+	end
+	return any
+end
+
 local function auto_align(rows, ncol)
 	local spec = {}
 	for j = 1, ncol do
-		local any, all_num = false, true
-		for i = 2, #rows do                                -- skip header row
-			local cell = rows[i][j]
-			if cell and cell.v ~= "" then
-				any = true
-				if not cell.num then all_num = false; break end
-			end
-		end
-		spec[j] = (any and all_num) and "r" or "l"
+		spec[j] = numeric_column(rows, j) and "r" or "l"
 	end
 	return table.concat(spec)
 end
 
--- Default column spec from the spreadsheet's own layout. If the user sized any
--- column in Excel, every column is given a width *proportional* to its Excel
--- width and the whole table is normalised to \linewidth — so a sheet that "fits
--- one page" in Excel fits the text block here too (rather than overflowing, as
--- absolute widths would). If no column was sized, fall back to auto l/r.
-local function spec_from_xlsx(rows, ncol, colwidths, default_w)
-	if next(colwidths) == nil then
-		return auto_align(rows, ncol)
-	end
-	local weights, total = {}, 0
-	for j = 1, ncol do
-		weights[j] = colwidths[j] or default_w or 8.43
-		total = total + weights[j]
-	end
-	local out = {}
-	for j = 1, ncol do
-		-- subtract the column's share of inter-column padding so the row fills,
-		-- but does not exceed, the line width.
-		out[j] = string.format(">{%s}p{\\dimexpr %.4f\\linewidth-2\\tabcolsep\\relax}",
-			WRAP, weights[j] / total)
-	end
-	return table.concat(out)
+-- One proportional, wrapping column: `fraction` of the line, minus the column's
+-- share of inter-column padding so the row fills, but does not exceed, the line.
+-- Numeric columns stay flush right.
+local function p_column(fraction, numeric)
+	local align = numeric and "\\raggedleft\\arraybackslash" or WRAP
+	return string.format(">{%s}p{\\dimexpr %.4f\\linewidth-2\\tabcolsep\\relax}", align, fraction)
 end
 
 -- Render a numeric cell. `decimals` (if set) rounds to that many places and trims
@@ -353,6 +345,179 @@ local function size_cmd(fontsize)
 		return string.format("\\fontsize{%s}{%g}\\selectfont", fontsize, tonumber(fontsize) * 1.2)
 	end
 	return "\\" .. fontsize
+end
+
+------------------------------------------------------- column-width estimation
+-- Used only when nothing else fixes the column spec (no `align`, no `widths`,
+-- no Excel column widths). Widths are measured in "average characters at the
+-- table font": rough, but enough to tell a short numeric table that fits as
+-- natural l/r columns from one whose prose cells would run off the page.
+
+-- East Asian wide characters set at about two Latin characters' width.
+local function is_wide(cp)
+	return (cp >= 0x1100 and cp <= 0x115F) or (cp >= 0x2E80 and cp <= 0xA4CF)
+		or (cp >= 0xAC00 and cp <= 0xD7A3) or (cp >= 0xF900 and cp <= 0xFAFF)
+		or (cp >= 0xFE30 and cp <= 0xFE4F) or (cp >= 0xFF00 and cp <= 0xFF60)
+		or (cp >= 0xFFE0 and cp <= 0xFFE6)
+end
+
+-- Roughly what a cell shows once typeset. `$K_{c,\mathrm{mid}}$ (–)` is 24
+-- bytes but sets about 9 characters: measuring the raw string would make maths
+-- columns far too wide and squeeze the plain-text ones. So inside $…$ a wrapper
+-- command (\mathrm{…}, \text{…}) keeps only its argument, a symbol command
+-- (\sigma, \leq) counts as one glyph, and _ ^ { } and spaces vanish.
+-- Citations count as a typical rendered citation.
+local function visible_text(s)
+	s = s:gsub("%$([^$]*)%$", function(m)
+		m = m:gsub("\\%a+%s*{", "{"):gsub("\\%a+", "x"):gsub("\\.", "x"):gsub("%s", "")
+		-- sub/superscripts set at ~70% size
+		m = m:gsub("[_^](%b{})", function(g)
+			return string.rep("x", math.ceil(0.7 * #g:gsub("[{}]", "")))
+		end)
+		return (m:gsub("[_^{}]", ""))
+	end)
+	s = s:gsub("%[[^%]]-@[^%]]-%]", "(Xxx 2000)")      -- [@key], [see @key, p. 3]
+	s = s:gsub("@[%w_][%w_:%.%-]*", "Xxx (2000)")      -- narrative @key
+	return s
+end
+
+local function utf8_codes(s)
+	local cps = {}
+	if not pcall(function() for _, cp in utf8.codes(s) do cps[#cps + 1] = cp end end) then
+		cps = { s:byte(1, -1) }                           -- invalid UTF-8: count bytes
+	end
+	return cps
+end
+
+-- Natural (unwrapped) width and longest unbreakable run of a string. A space
+-- ends a word; every wide (CJK) character is a break opportunity of its own.
+local function measure(s)
+	local width, word, run = 0, 0, 0
+	for _, cp in ipairs(utf8_codes(s)) do
+		if cp == 32 or cp == 9 or cp == 10 or cp == 13 then
+			width, run = width + 1, 0
+		elseif is_wide(cp) then
+			width, run = width + 2, 0
+			if word < 2 then word = 2 end
+		else
+			width, run = width + 1, run + 1
+			if run > word then word = run end
+		end
+	end
+	return width, word
+end
+
+-- Point size of the table font, for scaling the line length below.
+local SIZE_PT = {
+	tiny = 5, scriptsize = 7, footnotesize = 8, small = 9, normalsize = 10,
+	large = 12, Large = 14.4, LARGE = 17.28, huge = 20.74, Huge = 24.88,
+}
+
+-- How many average characters fit on the line. ~75 at the default \small:
+-- 345pt (article's 10pt text block) / ~4.5pt per character — conservative on
+-- purpose, since guessing "fits" wrongly overflows the margin while guessing
+-- "doesn't fit" only wraps a table that could have stayed natural.
+local LINE_CHARS = 75
+-- 2\tabcolsep (12pt) of padding per column, in characters.
+local COL_PAD = 3
+-- The character average undershoots words heavy in capitals and m/w (`Summer`
+-- sets ~5.5pt per letter at 9pt), so the longest-word floor gets 25% slack.
+local WORD_SLACK = 1.25
+
+local function line_chars(cfg)
+	local fs = cfg.fontsize
+	local pt = 9
+	if fs and fs ~= "" then
+		pt = tonumber(fs) or SIZE_PT[fs] or 9
+	end
+	local landscape = ({ ["true"] = 1, yes = 1, ["1"] = 1, on = 1 })[(cfg.landscape or ""):lower()]
+	return LINE_CHARS * (9 / pt) * (landscape and 1.4 or 1)
+end
+
+-- No column widths anywhere: keep natural l/r columns when the widest row fits
+-- the line (short numeric tables read better that way), otherwise switch to the
+-- same proportional p{} spec as Excel widths, with weights from the content:
+-- rendered length damped by ^0.6 (so one long prose column does not swallow the
+-- rest), floored at the column's longest word (so nothing is hyphenated or
+-- overflows its cell), plus a fixed allowance per column (each p{} gives up
+-- 2\tabcolsep, which a narrow column such as `Exo.` feels far more than a wide
+-- one). Fractions sum to 1, so the table spans exactly the line width.
+local function fit_spec(rows, ncol, cfg)
+	local natural, word, numeric, total = {}, {}, {}, 0
+	for j = 1, ncol do
+		local n, w = 0, 0
+		for i = 1, #rows do
+			local cell = rows[i][j]
+			if cell and cell.v ~= "" then
+				local raw = cell.num and fmt_number(cell.v, cfg.decimals) or cell.v
+				local cw, ww = measure(visible_text(raw))
+				if i == 1 then cw, ww = cw * 1.1, ww * 1.1 end -- bold header
+				if cw > n then n = cw end
+				if ww > w then w = ww end
+			end
+		end
+		natural[j], word[j], numeric[j] = n, w, numeric_column(rows, j)
+		total = total + n + COL_PAD
+	end
+	local line = line_chars(cfg)
+	if total <= line then return auto_align(rows, ncol) end
+
+	-- Share the line by weight, but never give a column less than its floor:
+	-- columns whose share falls short are pinned at the floor and the rest of
+	-- the line is re-shared among the others (repeat until nothing changes).
+	-- If even the floors do not fit, fall back to sharing by floor.
+	local weight, floor, floor_sum = {}, {}, 0
+	for j = 1, ncol do
+		floor[j] = word[j] * WORD_SLACK + COL_PAD
+		weight[j] = math.max(natural[j] ^ 0.6, word[j] * WORD_SLACK) + COL_PAD
+		floor_sum = floor_sum + floor[j]
+	end
+	local share = {}
+	if floor_sum >= line then
+		for j = 1, ncol do share[j] = floor[j] / floor_sum end
+	else
+		local pinned = {}
+		repeat
+			local free_line, free_weight = line, 0
+			for j = 1, ncol do
+				if pinned[j] then free_line = free_line - floor[j]
+				else free_weight = free_weight + weight[j] end
+			end
+			local changed = false
+			for j = 1, ncol do
+				if not pinned[j] then
+					local w = free_line * weight[j] / free_weight
+					if w < floor[j] then pinned[j], changed = true, true end
+					share[j] = w / line
+				else
+					share[j] = floor[j] / line
+				end
+			end
+		until not changed
+	end
+	local out = {}
+	for j = 1, ncol do out[j] = p_column(share[j], numeric[j]) end
+	return table.concat(out)
+end
+
+-- Default column spec from the spreadsheet's own layout. If the user sized any
+-- column in Excel, every column is given a width *proportional* to its Excel
+-- width and the whole table is normalised to \linewidth — so a sheet that "fits
+-- one page" in Excel fits the text block here too (rather than overflowing, as
+-- absolute widths would). If no column was sized, size from the content
+-- (fit_spec: natural l/r when it fits, proportional p{} when it would not).
+local function spec_from_xlsx(rows, ncol, colwidths, default_w, cfg)
+	if next(colwidths) == nil then
+		return fit_spec(rows, ncol, cfg)
+	end
+	local weights, total = {}, 0
+	for j = 1, ncol do
+		weights[j] = colwidths[j] or default_w or 8.43
+		total = total + weights[j]
+	end
+	local out = {}
+	for j = 1, ncol do out[j] = p_column(weights[j] / total, false) end
+	return table.concat(out)
 end
 
 -- Citation support: the table is emitted as raw LaTeX, which citeproc never
@@ -502,7 +667,7 @@ local function build_table(rows, ncol, colwidths, default_w, cfg)
 		if not spec then return nil, err end
 		align = spec
 	else
-		align = spec_from_xlsx(rows, ncol, colwidths, default_w)
+		align = spec_from_xlsx(rows, ncol, colwidths, default_w, cfg)
 	end
 
 	-- With a caption or label the table becomes a numbered floating `table`;
