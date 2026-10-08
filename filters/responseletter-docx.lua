@@ -433,12 +433,16 @@ end
 -- Floats without a caption stay unnumbered, as \caption-less LaTeX
 -- floats do. Word has no counter of its own here: the number is plain text.
 local function prefix_caption(cap, label)
-  local blocks = cap.long or {}
+  local blocks = cap.long
   local lead = pandoc.List{ pandoc.Str(label .. ':'), pandoc.Space() }
   local first = blocks[1]
-  if not first or not (first.t == 'Plain' or first.t == 'Para') then return false end
-  first.content = lead .. first.content
-  return true
+  if first and (first.t == 'Plain' or first.t == 'Para') then
+    first.content = lead .. first.content
+  else
+    -- a caption opening with a list or div still gets its number, so the R count
+    -- never skips one
+    blocks:insert(1, pandoc.Plain(lead))
+  end
 end
 
 local function number_floats(doc)

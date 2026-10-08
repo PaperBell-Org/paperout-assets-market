@@ -840,6 +840,13 @@ local function native_widths(rows, ncol, colwidths, default_w, cfg)
 			local left = math.max(1 - given, 0.1 * #open)
 			for _, j in ipairs(open) do out[j] = left * share[j] / open_share end
 		end
+		-- given widths over the line (or the 0.1 floor for natural columns) would
+		-- make Word's relative widths add past 1: scale the whole row back to fit
+		local total = 0
+		for j = 1, ncol do total = total + out[j] end
+		if total > 1 then
+			for j = 1, ncol do out[j] = out[j] / total end
+		end
 		return out
 	end
 	if next(colwidths) ~= nil then
