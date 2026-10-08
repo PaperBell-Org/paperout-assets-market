@@ -21,7 +21,10 @@ reference-doc: ${USERDATA}/templates/response-letter-reference.docx
 ## 过滤器顺序与 PDF 链（response-letter.yaml）一致：
 ## 1. manuscript_include —— 必须最先跑：把 ```manuscript 里的 @id 换成手稿里的当前原文，
 ##    并把行号/页码作为 data-page/data-sline/data-eline 挂在 Div 上。不加它的话，
-##    @id 会原样印进 Word。
+##    @id 会原样印进 Word。它还会给引用手稿表的 ```xlsx-table 注入 number:（来源表号）。
+## 1b. xlsx_table —— ```xlsx-table 块 → 原生 Word 表格（非 LaTeX 输出走原生 Table 分支，
+##    number: 写进题注 "Table 1: …"，notes: 用母版的 Table Note 样式）。必须在
+##    manuscript_include 之后（要读它注入的 number:）、citeproc 之前（单元格里的引文要进文献表）。
 ## 2. manuscript_cite —— 手贴的 ```manuscript 围栏展开成 Div，块内 [@key] 进同一份文献表
 ## 3. responseletter-docx —— 排版：callout → 命名样式，并从 callout 标题推出审稿人分节标题
 ## 4. citeproc —— 最后跑：正文与手稿引文共用一份参考文献
@@ -29,10 +32,9 @@ reference-doc: ${USERDATA}/templates/response-letter-reference.docx
 ## 为什么 citeproc 必须在 responseletter-docx 之后：设了 reference-section-title 之后，
 ## citeproc 会插入一个 "References" Header，而本 filter 用"文中有没有 Header"来判断作者
 ## 是不是自己写了分节标题 —— 让它先跑，审稿人标题（Reviewer #1 …）就全被抑制了。
-## （xlsx_table.lua 不在这里：它只会生成 LaTeX RawBlock，加进来表格会在 Word 里整块消失，
-##   见 issue #22。）
 filters:
   - ${USERDATA}/filters/manuscript_include.lua   #! 必须最先跑
+  - ${USERDATA}/filters/xlsx_table.lua           #! ```xlsx-table → 原生 Word 表格（与 PDF 链同一表格源）
   - ${USERDATA}/filters/manuscript_cite.lua
   - ${USERDATA}/filters/responseletter-docx.lua  #! callout → 命名样式 + 剔除中文
   - citeproc

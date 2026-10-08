@@ -307,7 +307,7 @@ filters/responseletter.lua:
       \AR / \manuscript / \zh) for a XeLaTeX PDF.
     zh: Obsidian callout → \RC / \AR / \manuscript / \zh。
 filters/responseletter-docx.lua:
-  version: 1.2.0
+  version: 1.2.1
   title:
     en: Response letter to docx
     zh: 回复信转 docx
@@ -329,7 +329,7 @@ filters/shift_headings.lua:
       set) to avoid a duplicate H1, dropping headings that fall to level 0.
     zh: 按 heading_shift（设了 title 时默认 1）整体降低 Markdown 标题级别，避免与标题重复的 H1，降到 0 级的标题被删除。
 filters/xlsx_table.lua:
-  version: 1.0.1
+  version: 1.1.0
   title:
     en: xlsx to booktabs table
     zh: xlsx 转三线表
@@ -337,8 +337,9 @@ filters/xlsx_table.lua:
     en: Turns a ```xlsx-table fence into a booktabs three-line LaTeX table by
       reading the named .xlsx sheet with the built-in pandoc.zip module (no
       external dependency), supporting caption/label, column widths, notes,
-      citations and landscape/longtable.
-    zh: 把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）。
+      citations and landscape/longtable; on non-LaTeX outputs (docx, …) it
+      builds a native table that pandoc-crossref and citeproc can process.
+    zh: 把 ```xlsx-table 块按 sheet 自动转成 booktabs 三线表（纯 Lua 用 pandoc.zip 解析，无外部依赖）；非 LaTeX 输出（docx 等）生成原生表格。
 templates/base.tex:
   version: 1.0.0
   title:
@@ -382,7 +383,7 @@ templates/demo-reference.docx:
     zh: 二进制 Word 参考文档，提供 docx 导出所用的样式（Title、Abstract、Normal、Table 等），供 docx filters
       和 pandoc 套用。
 templates/response-letter-reference.docx:
-  version: 1.0.0
+  version: 1.1.0
   title:
     en: Word response-letter master
     zh: Word 回复信样式母版
@@ -397,7 +398,7 @@ templates/response-letter-reference.docx:
       标签）、正体的作者回复（AR: 标签）、带定位标题栏的灰底加框手稿引文。取自 PDF 链的观感，由
       scripts/mk-response-letter-reference.mjs 生成。"
 templates/manuscript-reference.docx:
-  version: 1.1.0
+  version: 1.2.0
   title:
     en: Word manuscript master
     zh: Word 投稿样式母版

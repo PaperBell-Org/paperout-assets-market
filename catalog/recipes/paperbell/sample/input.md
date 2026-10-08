@@ -18,3 +18,12 @@ templating and core filters without external assets (no images, no bibliography)
 - second point
 
 Ordinary paragraph text follows, with **bold** and *italic* emphasis.
+
+A table read from a workbook; its long descriptions must wrap within the margin:
+
+```xlsx-table
+file: params.xlsx
+caption: Model parameters, read from a workbook.
+label: tbl:params
+notes: ^a^ Fraction of total available water.
+```

@@ -46,7 +46,10 @@ Everything below lives in `templates/manuscript-reference.docx` — the filters 
 | Figure caption | `Image Caption` | Left, **10.5 pt** (half a point below body), above-space 6 pt, below 12 pt, `Figure 1: …` |
 | Table caption | `Table Caption` | Left, **10.5 pt**, bold, kept with its table, `Table 1: …` |
 | Tables | `Table` | Three-line (booktabs-style): rule above, rule under the header row, rule below; columns normalised to full text width |
+| Table notes | `Table Note` | Left, **10 pt**, single-spaced, directly under the table (an ` ```xlsx-table ` fence's `notes:`) |
 | References | `Bibliography` | Left (not justified — long DOIs in a justified line open ugly gaps), double-spaced, 0.5-inch hanging indent, under a `References` heading |
+
+Tables can be written as ` ```xlsx-table ` fences that read a sheet of an `.xlsx` workbook — the same fences the PDF route (`paperbell`) turns into booktabs tables. Here `xlsx_table.lua` builds a native Word table instead: `caption:` becomes the table caption, `label: tbl:x` lets `[@tbl:x]` number and reference it, cells and notes are read as markdown (so `[@key]` reaches the bibliography), and column widths come from the sheet's Excel widths or, failing those, from the content. The LaTeX-only keys (`fontsize`, `placement`, `landscape`, `longtable`, verbatim `align:` column specs) are ignored on this route.
 
 Cross-references read `Figure 1` / `Figures 1, 2` / `Table 1`, matching what a journal expects; equation references read `(1)`, from the shipped `crossref.yaml`.
 
@@ -97,7 +100,7 @@ Looser shapes work too, so a note written for plain pandoc still gets a title bl
 
 ## Customization
 
-All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`); the table above lists what each of those styles is set to. To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
+All layout lives in `templates/manuscript-reference.docx`, not in the filters — the filters only tag each block with a style name (`Title`, `Author`, `Affiliation`, `Corresponding`, `Abstract Title`, `Abstract`, `Keywords`, `Table Note`, plus pandoc's own `Body Text`, `Image Caption`, `Table Caption`, `Bibliography`, `Table`); the table above lists what each of those styles is set to. To match a particular journal's house style, open that file in Word, edit those styles, and save it — or point `reference-doc:` at your own copy.
 
 The committed master is generated, not hand-edited: `node scripts/mk-manuscript-reference.mjs` rebuilds it from pandoc's default reference doc plus the patches in that script, and `--check` (run in CI) asserts the committed file still holds what the script produces. If you change the shipped master, change the script.
 

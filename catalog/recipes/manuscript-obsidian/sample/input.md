@@ -83,4 +83,13 @@ A hidden div that must not appear in the Word file either.
 | Alpha    | 1     |
 | Beta     | 2     |
 
+Model parameters are listed in @tbl:params.
+
+```xlsx-table
+file: params.xlsx
+caption: Model parameters, read from a workbook.
+label: tbl:params
+notes: ^a^ Calibrated as in [@knuth1984].
+```
+
 $$ E = mc^2 $$ {#eq:demo}
