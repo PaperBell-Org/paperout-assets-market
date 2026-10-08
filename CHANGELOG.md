@@ -2,6 +2,24 @@
 
 Notable changes to the published assets and tooling. Versions are the release tags.
 
+## Unreleased
+
+**Response letters read pandoc's standard `author:`.** Closes #26. Both letter filters only
+read `authors:`, so a note whose frontmatter used `author:` exported a letterhead with no
+author line and no warning, on the Word route and the PDF route alike. The manuscript route
+already accepted either key, so the same project exported a manuscript with authors and a
+letter without them.
+
+`normalize_meta()`, shared by `filters/responseletter.lua` and
+`filters/responseletter-docx.lua`, now fills `authors` from `author` when `authors` is
+absent, beside its existing `title` → `papertitle` and `target` → `journal` aliases. The
+Word route also clears `author` once the letterhead is built, as it already did for
+`title` and `date`, so pandoc does not print the names a second time above it.
+
+`filters/responseletter.lua` → 1.0.1, `filters/responseletter-docx.lua` → 1.1.1;
+recipes `response-letter` → 1.0.1 and `response-letter-docx` → 1.1.1; bundles
+`response-letter` → 1.0.3, `response-letter-docx` → 1.1.1, `full` → 1.0.12.
+
 ## 1.2.1 — 2026-10-07
 
 **Raw-LaTeX tables are collected at the end too.** Reported from a real export: the

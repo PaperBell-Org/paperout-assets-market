@@ -30,7 +30,7 @@ Everything lives in `templates/response-letter-reference.docx`; the filter only 
 | --- | --- | --- |
 | Kicker | `Letter Kicker` | Arial bold 14 pt, accent. "Author Response to Reviews of", or "Reviewer Comments to the Manuscript" when `type: reviewer-comments`; override with `lettertitle:` |
 | Paper title | `Title` | Times bold 20 pt, from `papertitle:` (falls back to `title:`) |
-| Authors | `Author` | Body weight, from `authors:` (a list of names or of `{name:}` maps) |
+| Authors | `Author` | Body weight, from `authors:` (a list of names or of `{name:}` maps), or pandoc's standard `author:` when `authors:` is absent |
 | Journal | `Journal` | Italic, from `journal:` (or `target:`), with the 1 pt accent head rule as its bottom border; `doi:` appended in monospace |
 | Legend | `Legend` | 9 pt, right-aligned: **RC:** *Reviewer Comment*, **AR:** Author Response, ▢ Manuscript text |
 

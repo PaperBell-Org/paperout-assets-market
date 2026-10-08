@@ -350,6 +350,7 @@ end
 local function normalize_meta(meta)
   if not meta.papertitle and meta.title then meta.papertitle = meta.title end
   if not meta.journal and meta.target then meta.journal = meta.target end
+  if not meta.authors and meta.author then meta.authors = meta.author end
   if not meta.type then meta.type = pandoc.MetaString('author-response') end
   if meta.authors and utils.type(meta.authors) == 'List' then
     local names = {}
@@ -425,9 +426,10 @@ function Pandoc(doc)
   local meta = normalize_meta(doc.meta)
   local out = letterhead(meta)
 
-  -- 抬头已经手工排好；不清掉这些键，pandoc 的默认模板会在最上面再印一遍标题/日期，
+  -- 抬头已经手工排好；不清掉这些键，pandoc 的默认模板会在最上面再印一遍标题/作者/日期，
   -- 而 add-zenodo-frontmatter 写进草稿的论文摘要也会整段漏进回复信。
   meta.title = nil
+  meta.author = nil
   meta.abstract = nil
   meta.date = nil
   meta.subtitle = nil

@@ -364,6 +364,7 @@ end
 local function normalize_meta(meta)
   if not meta.papertitle and meta.title then meta.papertitle = meta.title end
   if not meta.journal and meta.target then meta.journal = meta.target end
+  if not meta.authors and meta.author then meta.authors = meta.author end
   if not meta.type then meta.type = pandoc.MetaString('author-response') end
   -- authors given as a YAML list (each item a map with a `name`) -> a string
   if meta.authors and utils.type(meta.authors) == 'List' then
