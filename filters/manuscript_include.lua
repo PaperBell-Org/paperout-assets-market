@@ -222,7 +222,39 @@ local function resolve_figrefs(blocks)
       return fm[key] or m
     end))
   end
+  -- pandoc-crossref 自己的写法 [@fig:label] / [@tbl:label]：回复信不跑 pandoc-crossref
+  -- （图号要沿用手稿的 sidecar，不能重编），不拦下来就会被 citeproc 当成文献印成 "fig:label?"。
+  -- 只拦 fig:/tbl:，真文献照样交给 citeproc；sidecar 里查不到的 label 原样留着，错得看得见。
+  -- 面板后缀（…]a、…]c,d）是相邻的 Str，不受影响。
+  local CROSSREF = { fig = { fm, 'Figure', 'Figures' }, tbl = { tbl_numbers(), 'Table', 'Tables' } }
+  local function crossref_num(id)
+    local kind = id:match('^(%a+):')
+    local spec = kind and CROSSREF[kind:lower()]
+    if not spec then return nil end
+    local num = spec[1][id] or spec[1][id:gsub('^%a+:', '')]
+    return num and tostring(num), spec
+  end
+  local NBSP = utf8.char(0x00A0)
   return pandoc.Pandoc(blocks):walk({
+    Cite = function(el)
+      local groups, order = {}, {}
+      for _, c in ipairs(el.citations) do
+        local num, spec = crossref_num(c.id)
+        if not num then return nil end          -- 真文献 / 未知 label：整个 Cite 原样留下
+        if not groups[spec] then groups[spec] = {}; order[#order + 1] = spec end
+        local g = groups[spec]
+        g[#g + 1] = num
+        g.bare = g.bare or c.mode == 'SuppressAuthor'   -- [-@fig:x] → 只要数字
+      end
+      local parts = {}
+      for _, spec in ipairs(order) do
+        local g = groups[spec]
+        local nums = #g == 1 and g[1]
+          or table.concat(g, ', ', 1, #g - 1) .. ' and ' .. g[#g]
+        parts[#parts + 1] = g.bare and nums or ((#g == 1 and spec[2] or spec[3]) .. NBSP .. nums)
+      end
+      return pandoc.Str(table.concat(parts, '; '))
+    end,
     RawInline = function(el)
       if el.format == 'tex' or el.format == 'latex' then
         local ns = sub_str(el.text)
@@ -481,6 +513,10 @@ function CodeBlock(blk)
     elseif figsrc then
       local sub = pandoc.read(render_placeholders(figsrc), 'markdown')      -- 整张图（含图注），占位符→数字
       blocks:extend(resolve_figrefs(sub.blocks))
+    elseif id:match('^tbl:') then
+      -- 表不能按 label 整张拉取（只索引了 {#fig:…}）；别让它看起来像拼错了
+      blocks:insert(pandoc.Para{ pandoc.Strong{ pandoc.Str('‹tables cannot be pulled by @' .. id
+        .. ' — repeat the ```xlsx-table block in the letter; its number is taken from the manuscript›') } })
     else
       blocks:insert(pandoc.Para{ pandoc.Strong{ pandoc.Str('‹unresolved manuscript ref: @' .. id .. '›') } })
     end

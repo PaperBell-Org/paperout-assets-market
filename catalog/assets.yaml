@@ -194,7 +194,7 @@ filters/manuscript_cite.lua:
       one shared bibliography.
     zh: 把手贴 ```manuscript 引文块在 citeproc 之前展开成 Div，让块内 [@key] 进同一份参考文献。
 filters/manuscript_include.lua:
-  version: 1.0.1
+  version: 1.0.2
   title:
     en: Pull manuscript quotes
     zh: 拉取手稿原文

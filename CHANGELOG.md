@@ -15,10 +15,29 @@ letter without them.
 absent, beside its existing `title` → `papertitle` and `target` → `journal` aliases. The
 Word route also clears `author` once the letterhead is built, as it already did for
 `title` and `date`, so pandoc does not print the names a second time above it.
+`filters/responseletter.lua` → 1.0.1, `filters/responseletter-docx.lua` → 1.1.1.
 
-`filters/responseletter.lua` → 1.0.1, `filters/responseletter-docx.lua` → 1.1.1;
-recipes `response-letter` → 1.0.1 and `response-letter-docx` → 1.1.1; bundles
-`response-letter` → 1.0.3, `response-letter-docx` → 1.1.1, `full` → 1.0.12.
+**pandoc-crossref references in a pulled span get the manuscript's numbers.** Closes #30.
+`manuscript_include.lua` rewrote `\ref{fig:x}` inside a pulled span but not
+pandoc-crossref's own `[@fig:x]`. The letter does not run pandoc-crossref (its numbers come
+from the `figure-numbers.json` / `table-numbers.json` sidecars), so those references fell
+through to citeproc as unknown citations and printed as `fig:water-use?a`. One reported
+letter carried 28 of them.
+
+`[@fig:x]` / `[@tbl:x]` now become `Figure 2` / `Table 1`, `[@fig:a; @fig:b]` becomes
+`Figures 2 and 3`, and `[-@fig:x]` gives the bare number. A panel suffix written after
+the bracket stays attached, so `[@fig:x]c,d` becomes `Figure 2c,d`. Real citations still go
+to citeproc. A label the sidecar does not know is left as written, so the failure stays
+visible. `@tbl:x` on its own line in a fence now says that tables cannot be pulled by label,
+instead of the generic "unresolved manuscript ref", which reads like a typo.
+
+The `response-letter-docx` sample gained a `[@fig:…]` reference and a `figure-numbers.json`.
+Every golden passed unchanged before that, so this path had no coverage.
+
+`filters/manuscript_include.lua` → 1.0.2.
+
+Recipes `response-letter` → 1.0.2 and `response-letter-docx` → 1.1.2; bundles
+`response-letter` → 1.0.4, `response-letter-docx` → 1.1.2, `full` → 1.0.13.
 
 ## 1.2.1 — 2026-10-07
 
