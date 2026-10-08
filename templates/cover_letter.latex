@@ -9,7 +9,8 @@
 % (which reads the sibling metadata.json).
 %
 % Assets (logo, signature, reviewers.csv) live in templates/cover_letter/ and
-% are resolved via the global TEXINPUTS (…/pandoc/templates/).
+% are resolved via AssetDir (injected by cover_letter.lua). A missing asset is
+% skipped with a LaTeX warning instead of failing the build.
 % =============================================================================
 \documentclass[11pt,a4paper,roman]{moderncv}
 \usepackage[english]{babel}
@@ -32,6 +33,17 @@
 
 % assets（logo/签名）目录：由 cover_letter.lua 注入的绝对路径，零依赖 TEXINPUTS
 $if(AssetDir)$\graphicspath{{$AssetDir$/}}$endif$
+% 找资产文件：先按原样（绝对路径 / 工作目录 / TEXINPUTS），再到 AssetDir 下找；
+% 都找不到就只记一条 warning 并走缺失分支（#3），不让 XeLaTeX 因缺 logo/签名/csv 报错。
+% 用法：\CLAssetIfExists{<file>}{<找到时；\CLAssetFile = 解析后的路径>}{<缺失时>}
+\makeatletter
+\def\CL@assetdir{$if(AssetDir)$$AssetDir$$endif$}
+\newcommand\CLAssetIfExists[3]{%
+  \IfFileExists{#1}{\def\CLAssetFile{#1}#2}{%
+    \IfFileExists{\CL@assetdir/#1}{\edef\CLAssetFile{\CL@assetdir/#1}#2}{%
+      \PackageWarningNoLine{cover_letter}{asset `#1' not found (looked in
+        `\CL@assetdir'); skipped}#3}}}
+\makeatother
 
 % 字体设置 - 使用 Times New Roman
 \setmainfont{$if(mainfont)$$mainfont$$else$Times New Roman$endif$}
@@ -129,11 +141,13 @@ $endif$
 
 % 插入机构 Logo
 $if(LogoPath)$
+\CLAssetIfExists{$LogoPath$}{%
 \begin{minipage}[t]{\textwidth}
-\includegraphics[width=$if(LogoScale)$$LogoScale$$else$0.80$endif$\textwidth]{$LogoPath$}
+\includegraphics[width=$if(LogoScale)$$LogoScale$$else$0.80$endif$\textwidth]{\CLAssetFile}
 \end{minipage}
 
 \vspace{1.5cm}
+}{}
 $endif$
 
 % 收件人信息
@@ -154,6 +168,7 @@ $if(reviewers)$
 \textbf{Recommended reviewers (no conflicts of interest):}
 \vspace{0.05cm}
 
+\CLAssetIfExists{reviewers.csv}{%
 \begin{center}
 \footnotesize
 \begin{longtable}{p{0.14\textwidth} p{0.26\textwidth} p{0.26\textwidth} p{0.34\textwidth}}
@@ -164,7 +179,7 @@ $if(reviewers)$
     head to column names,
     late after line=\\,
     range={1-$if(MaxReviewers)$$MaxReviewers$$else$5$endif$}
-  ]{$if(AssetDir)$$AssetDir$/$endif$reviewers.csv}{
+  ]{\CLAssetFile}{
     reviewer=\colA, email=\colB, institute=\colC, reason=\colD, link=\colE
   }{
     \href{\colE}{\textcolor{blue!70!black}{\colA}} & \colB & \colC & \colD
@@ -172,6 +187,7 @@ $if(reviewers)$
 \bottomrule
 \end{longtable}
 \end{center}
+}{\textit{(reviewers.csv not found: copy reviewers.example.csv to reviewers.csv in templates/cover\_letter/.)}\par}
 $endif$
 
 % 落款
@@ -184,7 +200,7 @@ $if(AuthorAddress)$$AuthorAddress$$endif$
 
 $if(AuthorEmail)$Email: $AuthorEmail$$endif$
 
-$if(SignaturePath)$\includegraphics[height=1cm]{$SignaturePath$}$endif$
+$if(SignaturePath)$\CLAssetIfExists{$SignaturePath$}{\includegraphics[height=1cm]{\CLAssetFile}}{}$endif$
 
 \vspace{-0.2cm}
 $if(date)$$date$$else$\today$endif$

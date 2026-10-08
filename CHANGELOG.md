@@ -98,12 +98,36 @@ link stay full-width. A full-width comma in all-English text still becomes `, ` 
 glyph carried is kept); half-width punctuation in all-English text is left as typed. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
 this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 
+**The cover letter no longer ships someone's identity, and compiles again.** Closes #12.
+
+- A letter whose frontmatter set `AuthorEmail` failed to compile with `TeX capacity
+  exceeded [input stack size]`, and so did the recipe's own sample. Pandoc auto-linked the
+  bare address, and moderncv's `\email` wrapped that link in a second `\href`. The nested
+  `\href` sent hyperref into unbounded recursion. `cover_letter.lua` now passes the address
+  as plain text.
+- The blank placeholders are renamed from `MPI-GEA_logo.pdf` / `Song_signature.png` to
+  `letterhead.pdf` / `signature.png`.
+- `defaults/cover_letter.yaml` ships `Your Institution`-style placeholders instead of a
+  real institution, address, phone number and ORCID.
+- New `reviewers.example.csv` shows the columns `reviewers: true` reads.
+- A missing logo, signature or `reviewers.csv` is now skipped with a LaTeX warning instead
+  of aborting XeLaTeX.
+- The asset directory is passed to LaTeX with forward slashes, so on Windows
+  (`C:\Users\…`) the template no longer reads `\Users` as an undefined command.
+- The READMEs give the vault path (`PaperBell/pandoc/templates/cover_letter/`), recommended
+  formats and sizes, how to point `LogoPath` / `SignaturePath` at your own files, and warn
+  that reinstalling the bundle currently overwrites the shipped files. Protecting
+  user-replaced files needs the plugin: PaperBell-Org/longform-maintaining#48.
+
+`filters/cover_letter.lua` → 1.0.1, `templates/cover_letter.latex` → 1.1.0; recipe and
+bundle `cover_letter` → 1.1.0.
+
 Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
 `paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3,
-`demo-obsidian` → 1.0.2, `pdf` → 1.0.2; bundles `response-letter` → 1.0.6,
+`demo-obsidian` → 1.0.2, `pdf` → 1.0.2, `cover_letter` → 1.1.0; bundles `response-letter` → 1.0.6,
 `response-letter-docx` → 1.2.0, `paperbell` → 1.0.4, `paperbell-windows` → 1.0.4,
 `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3, `demo-obsidian` → 1.0.3,
-`pdf` → 1.0.3, `full` → 1.0.18.
+`pdf` → 1.0.3, `cover_letter` → 1.1.0, `full` → 1.0.19.
 
 ## 1.2.1 — 2026-10-07
 

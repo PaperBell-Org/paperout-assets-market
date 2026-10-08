@@ -57,8 +57,18 @@ local function populate_meta(meta)
   if PANDOC_SCRIPT_FILE then
     local fdir = dirname(PANDOC_SCRIPT_FILE)                      -- …/pandoc/filters
     local adir = fdir:gsub("[/\\]filters$", "") .. "/templates/cover_letter"
+    -- Windows 路径的反斜杠在 TeX 里是控制序列（C:\Users → \Users 未定义），统一成 /
+    adir = adir:gsub("\\", "/")
     -- 用 RawInline 注入，避免 pandoc 把路径里的 _ 转义成 \_（否则 \graphicspath 找不到文件）
     meta.AssetDir = pandoc.MetaInlines({ pandoc.RawInline("latex", adir) })
+  end
+
+  -- frontmatter 里的 AuthorEmail 会被 autolink_bare_uris 解析成 Link，模板渲染成
+  -- \href{mailto:…}{\nolinkurl{…}}；moderncv 的 \email 自己再包一层 \href，
+  -- 嵌套 \href 让 hyperref 无限递归（TeX capacity exceeded [input stack size]）。
+  -- 压平成纯文本，与 metadata.json 来源（MetaString）一致。
+  if meta.AuthorEmail ~= nil then
+    meta.AuthorEmail = pandoc.MetaString(pandoc.utils.stringify(meta.AuthorEmail))
   end
 
   local path = find_metadata()

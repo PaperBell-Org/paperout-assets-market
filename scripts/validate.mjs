@@ -23,7 +23,7 @@ if (fs.existsSync(clDir)) {
     errors.push('templates/cover_letter/README.md missing (needed to explain placeholder replacement)');
   }
   const PLACEHOLDER_MAX = 50 * 1024; // real logos/signatures are typically larger
-  for (const f of ['MPI-GEA_logo.pdf', 'Song_signature.png']) {
+  for (const f of ['letterhead.pdf', 'signature.png']) {
     const fp = path.join(clDir, f);
     if (fs.existsSync(fp)) {
       const size = fs.statSync(fp).size;
