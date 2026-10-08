@@ -112,6 +112,8 @@ this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 - New `reviewers.example.csv` shows the columns `reviewers: true` reads.
 - A missing logo, signature or `reviewers.csv` is now skipped with a LaTeX warning instead
   of aborting XeLaTeX.
+- The asset directory is passed to LaTeX with forward slashes, so on Windows
+  (`C:\Users\…`) the template no longer reads `\Users` as an undefined command.
 - The READMEs give the vault path (`PaperBell/pandoc/templates/cover_letter/`), recommended
   formats and sizes, how to point `LogoPath` / `SignaturePath` at your own files, and warn
   that reinstalling the bundle currently overwrites the shipped files. Protecting
