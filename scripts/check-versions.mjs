@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Assert every recipe/bundle manifest declares a valid semver `version`. Versions are
-// INDEPENDENT per asset — they are NOT tied to the repository's release tag. Bump an
-// asset's own version only when that asset changes.
+// Assert every recipe/bundle manifest and every catalog/assets.yaml entry declares a
+// valid semver `version`. Versions are INDEPENDENT per asset — they are NOT tied to the
+// repository's release tag. Bump an asset's own version only when that asset changes.
 //
 //   node scripts/check-versions.mjs
 
@@ -22,6 +22,16 @@ for (const [kind, file] of [['recipes', 'recipe.yaml'], ['bundles', 'bundle.yaml
     if (!fs.existsSync(fp)) continue;
     const v = YAML.parse(fs.readFileSync(fp, 'utf8'))?.version;
     if (!isSemver(v)) bad.push(`${kind}/${id}: ${JSON.stringify(v)}`);
+  }
+}
+
+// Leaf assets (filters, templates, CSL, …) carry their version in catalog/assets.yaml.
+const assetsFile = path.join(ROOT, 'catalog', 'assets.yaml');
+if (fs.existsSync(assetsFile)) {
+  const assets = YAML.parse(fs.readFileSync(assetsFile, 'utf8')) || {};
+  for (const [key, entry] of Object.entries(assets)) {
+    const v = entry?.version;
+    if (!isSemver(v)) bad.push(`assets.yaml ${key}: ${JSON.stringify(v)}`);
   }
 }
 

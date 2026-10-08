@@ -1,0 +1,43 @@
+name: PR scope
+
+# The PR scope gate on its own, so that label changes re-run only this (seconds),
+# not validate.yml's full toolchain install and recipe builds.
+#
+# `labeled`/`unlabeled` matter because the gate reads PR_LABELS: applying
+# `core-change` to an already-open PR must re-run it. A plain re-run replays the
+# original event payload (labels still empty), so without these types the only way to
+# get a green check was an empty retrigger commit.
+#
+# Deliberately no `if:` filter on the label name: a job skipped by `if:` reports a
+# successful "skipped" check run on the same commit, which would hide an earlier red
+# result as soon as anyone added an unrelated label. Re-running the gate is cheap and
+# always gives the current answer.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-scope-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # diff against the base branch
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20.x"
+          cache: "npm"
+      - run: npm ci
+
+      - name: PR scope gate (added-only unless core-change label)
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: node scripts/check-pr-scope.mjs

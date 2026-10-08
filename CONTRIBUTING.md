@@ -133,13 +133,15 @@ existing one; to change an existing shared asset, see below.
 
 ### 5. You add; you don't overwrite
 External contributions may **only add** files by default. Modifying or deleting an
-existing **core** asset is scope-gated: CI (`check:pr-scope`) flags it, and it needs a
-`core-change` label + maintainer approval. This protects existing recipes.
+existing **core** asset is scope-gated: CI (`check:pr-scope`, in the *PR scope* workflow)
+flags it, and it needs a `core-change` label + maintainer approval. This protects existing
+recipes.
 
 Maintainers: apply the label **when you open the PR** (`gh pr create --label core-change`).
 The gate reads `github.event.pull_request.labels`, which is a snapshot taken when the event
-fires — labelling afterwards re-runs the workflow and passes, but the first red run stays on
-the PR, and re-running it does not help because it replays the original, label-less payload.
+fires — labelling afterwards re-runs the (seconds-long) *PR scope* workflow and passes, but
+the first red run stays on the PR, and re-running it does not help because it replays the
+original, label-less payload. Label changes do not re-run the full *Validate* workflow.
 
 ## Trust tiers
 
