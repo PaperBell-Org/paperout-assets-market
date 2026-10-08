@@ -49,10 +49,13 @@ removed a comment that filled a whole paragraph, because it checked the paragrap
 and last word. A note written mid-sentence, as Obsidian users usually write them, was kept
 and reached the exported Word or PDF file. That is the Word file sent to co-authors on the
 `manuscript-obsidian` route, which its README promises keeps drafting notes out. The filter
-now scans each run of inlines for paired markers: tight (`%%note%%`), spaced, spanning a
-soft line break, inside emphasis, or several per paragraph. A paragraph that was only a
-comment is dropped, as before. An unpaired `%%` (e.g. `50%%`) is left as written rather
-than swallowing the rest of the paragraph, and `%%` inside inline code is untouched. The
+now pairs the markers per paragraph, list item or heading, in reading order through any
+formatting: tight (`%%note%%`), spaced, spanning a soft line break, opening inside
+`**bold**` and closing after it, or several per paragraph. A paragraph that was only a
+comment is dropped, as before, and so is a list item that was only a comment; other
+empty blocks are left alone. A paragraph with an odd number of `%%` (e.g. `50%%`) is left
+as written rather than swallowing the rest of it, and `%%` inside inline code is
+untouched. A comment spanning a blank line is still not recognised. The
 `manuscript-obsidian` sample gained an inline comment. `filters/div.lua` → 1.1.0.
 
 **`defaults/crossref.yaml` finally takes effect.** Closes #15. Six defaults set
@@ -91,8 +94,8 @@ through untouched, including their emails, DOIs and bare domains. Inside Chinese
 dotted names (`example.org`, `config.yaml`, `U.S.`, `Fig.1`) and times (`10:30`) are no
 longer split. An email glued to Han is now spaced from it (`邮箱ada@example.org是` →
 `邮箱 ada@example.org 是`) without touching the address. `）。` after a DOI and `。` after a
-link stay full-width. A full-width comma in all-English text is converted without adding a
-space. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
+link stay full-width. A full-width comma in all-English text still becomes `, ` (the space the full-width
+glyph carried is kept); half-width punctuation in all-English text is left as typed. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
 this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 
 **The cover letter no longer ships someone's identity, and compiles again.** Closes #12.
@@ -109,6 +112,8 @@ this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 - New `reviewers.example.csv` shows the columns `reviewers: true` reads.
 - A missing logo, signature or `reviewers.csv` is now skipped with a LaTeX warning instead
   of aborting XeLaTeX.
+- The asset directory is passed to LaTeX with forward slashes, so on Windows
+  (`C:\Users\…`) the template no longer reads `\Users` as an undefined command.
 - The READMEs give the vault path (`PaperBell/pandoc/templates/cover_letter/`), recommended
   formats and sizes, how to point `LogoPath` / `SignaturePath` at your own files, and warn
   that reinstalling the bundle currently overwrites the shipped files. Protecting
