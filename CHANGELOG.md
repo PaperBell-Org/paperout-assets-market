@@ -94,8 +94,8 @@ through untouched, including their emails, DOIs and bare domains. Inside Chinese
 dotted names (`example.org`, `config.yaml`, `U.S.`, `Fig.1`) and times (`10:30`) are no
 longer split. An email glued to Han is now spaced from it (`邮箱ada@example.org是` →
 `邮箱 ada@example.org 是`) without touching the address. `）。` after a DOI and `。` after a
-link stay full-width. A full-width comma in all-English text is converted without adding a
-space. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
+link stay full-width. A full-width comma in all-English text still becomes `, ` (the space the full-width
+glyph carried is kept); half-width punctuation in all-English text is left as typed. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
 this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
 
 Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
