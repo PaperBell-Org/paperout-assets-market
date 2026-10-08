@@ -61,6 +61,14 @@ local function populate_meta(meta)
     meta.AssetDir = pandoc.MetaInlines({ pandoc.RawInline("latex", adir) })
   end
 
+  -- frontmatter 里的 AuthorEmail 会被 autolink_bare_uris 解析成 Link，模板渲染成
+  -- \href{mailto:…}{\nolinkurl{…}}；moderncv 的 \email 自己再包一层 \href，
+  -- 嵌套 \href 让 hyperref 无限递归（TeX capacity exceeded [input stack size]）。
+  -- 压平成纯文本，与 metadata.json 来源（MetaString）一致。
+  if meta.AuthorEmail ~= nil then
+    meta.AuthorEmail = pandoc.MetaString(pandoc.utils.stringify(meta.AuthorEmail))
+  end
+
   local path = find_metadata()
   if not path then return meta end
 
