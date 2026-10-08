@@ -45,13 +45,15 @@ jobs:
       - name: Validate invariants + index (strict)
         run: node scripts/validate.mjs
 
-      - name: Install pandoc + pandoc-crossref
-        run: bash .github/scripts/install-pandoc.sh
-
+      # Needs no pandoc: the masters are patched from the vendored base in
+      # scripts/reference-base/, so a pandoc bump cannot turn this step red.
       - name: Reference masters match their generators
         run: |
           node scripts/mk-manuscript-reference.mjs --check
           node scripts/mk-response-letter-reference.mjs --check
+
+      - name: Install pandoc + pandoc-crossref
+        run: bash .github/scripts/install-pandoc.sh
 
       - name: Build-test recipes (fingerprint smoke + golden)
         run: node scripts/build-recipe.mjs --all

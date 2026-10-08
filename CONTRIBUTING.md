@@ -96,16 +96,26 @@ Generate/refresh a fingerprint with `npm run build:recipe -- <id> --update-golde
 A `.docx` reference master is opaque in review, so a binary that ships as a *core* asset
 should be derived by a committed script rather than hand-saved from Word.
 `templates/manuscript-reference.docx` is the reference case: `npm run
-mk:manuscript-reference` rebuilds it from pandoc's own default reference doc plus a set
-of XML patches held in the script, and CI runs
+mk:manuscript-reference` rebuilds it from pandoc's default reference doc plus a set of
+XML patches held in the script, and CI runs
 `node scripts/mk-manuscript-reference.mjs --check` to assert the committed file still
-holds what the script produces. That way the reviewable diff is the patch list, not the
-blob. If you change such a master, change its generator.
+holds what the script produces (`templates/response-letter-reference.docx` and
+`mk-response-letter-reference.mjs` work the same way). That way the reviewable diff is
+the patch list, not the blob. If you change such a master, change its generator.
+
+The base is **vendored**, not taken from the pandoc on your PATH:
+`scripts/reference-base/pandoc-reference-<version>.docx` (outside `templates/`, so it is
+not published as an asset). Generating and checking the masters therefore needs no
+pandoc, and the result does not depend on which pandoc you have. Moving to a newer
+pandoc's base is its own commit: `npm run vendor:pandoc-reference -- --check` tells you
+whether the installed pandoc ships a different base; the script's header lists the
+steps to adopt it.
 
 The check compares the zip's **entry content**, not its bytes — deflate output varies
 between zlib builds, so two materially identical .docx files can differ byte for byte
 across machines. For the same reason the generator leaves the committed file alone when
-the content already matches, so regenerating never produces an empty-looking diff.
+the content already matches, so regenerating never produces an empty-looking diff. On a
+mismatch it names every part that differs, plus any difference in part count or order.
 
 (This does not apply to a personal or third-party template you are vendoring — commit
 those directly and record provenance in `NOTICE`.)

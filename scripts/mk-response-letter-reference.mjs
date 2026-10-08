@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 // Generate `templates/response-letter-reference.docx` — the Word style master for the
-// `response-letter-docx` recipe — deterministically from pandoc's own default
-// reference.docx. Same convention as scripts/mk-manuscript-reference.mjs: the
-// reviewable artifact is the patch list below, and --check (run in CI) asserts the
-// committed binary still holds exactly what this source produces.
+// `response-letter-docx` recipe — deterministically from pandoc's default
+// reference.docx, vendored at scripts/reference-base/. Same convention as
+// scripts/mk-manuscript-reference.mjs: the reviewable artifact is the patch list below,
+// --check (run in CI, no pandoc needed) asserts the committed binary still holds
+// exactly what this source produces, and the CLI plus the shared styles.xml steps live
+// in scripts/lib/docx.mjs.
 //
 //   node scripts/mk-response-letter-reference.mjs            # write the file
 //   node scripts/mk-response-letter-reference.mjs --check    # assert it matches
+//   node scripts/mk-response-letter-reference.mjs --help
 //
 // The look is derived from the PDF route (templates/responseletter.sty), which is the
 // house style people already read: the three roles a response letter has to keep apart
@@ -15,15 +18,12 @@
 // greyscale printing and journal systems that strip colour. Only labels and headings
 // carry the primary colour.
 
-import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { readZip, writeZip, patchEntry, entriesEqual } from './lib/docx.mjs';
+import { buildMaster, runMasterGenerator } from './lib/docx.mjs';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const OUT = path.join(ROOT, 'templates', 'response-letter-reference.docx');
-const check = process.argv.includes('--check');
+export const OUT = path.join(ROOT, 'templates', 'response-letter-reference.docx');
 
 const SERIF = 'Times New Roman';
 const SANS = 'Arial';
@@ -199,30 +199,6 @@ const DOC_DEFAULTS =
   '<w:lang w:val="en-US" w:eastAsia="en-US" w:bidi="ar-SA"/>' +
   '</w:rPr></w:rPrDefault><w:pPrDefault><w:pPr>' + BODY_SPACING + '</w:pPr></w:pPrDefault></w:docDefaults>';
 
-function patchStyles(xml) {
-  let out = xml;
-  out = replace(out, /<w:docDefaults>[\s\S]*?<\/w:docDefaults>/, DOC_DEFAULTS, 'docDefaults');
-
-  // Theme fonts resolve to Aptos/Calibri via theme1.xml; pin them so a style we did
-  // not rewrite still lands in the right family.
-  out = replace(out, /w:asciiTheme="(?:major|minor)HAnsi"/g, `w:ascii="${SERIF}"`, 'ascii theme font');
-  out = replace(out, /w:hAnsiTheme="(?:major|minor)HAnsi"/g, `w:hAnsi="${SERIF}"`, 'hAnsi theme font');
-  out = replace(out, /w:eastAsiaTheme="(?:major|minor)EastAsia"/g, `w:eastAsia="${SERIF}"`, 'eastAsia theme font');
-  out = replace(out, /w:cstheme="(?:major|minor)Bidi"/g, `w:cs="${SERIF}"`, 'cs theme font');
-  // Pandoc's themed heading colour; the letter uses its own primary instead.
-  out = replace(out, /<w:color w:val="0F4761"[^/]*\/>/g, '', 'themed heading colour');
-
-  for (const [id, body] of Object.entries(STYLES)) {
-    if (ADDED.includes(id)) continue;
-    const re = new RegExp(`<w:style\\b[^>]*w:styleId="${id}"[^>]*>[\\s\\S]*?<\\/w:style>`);
-    out = replace(out, re, body, `style ${id}`);
-  }
-
-  const additions = ADDED.map((id) => STYLES[id]).join('');
-  out = replace(out, /<\/w:styles>/, additions + '</w:styles>', 'styles close tag');
-  return out;
-}
-
 // US Letter; margins mirror the PDF's geometry (22 mm top/bottom, 25 mm left/right).
 const SECT_PR =
   '<w:sectPr><w:footnotePr><w:numRestart w:val="eachSect"/></w:footnotePr>' +
@@ -230,82 +206,13 @@ const SECT_PR =
   '<w:pgMar w:top="1247" w:right="1417" w:bottom="1247" w:left="1417" w:header="720" w:footer="720" w:gutter="0"/>' +
   '</w:sectPr>';
 
-function patchDocument(xml) {
-  return replace(xml, /<w:sectPr>[\s\S]*?<\/w:sectPr>/, SECT_PR, 'sectPr');
+// patchStylesXml (scripts/lib/docx.mjs) also pins every theme-font attribute to the
+// serif and drops pandoc's themed heading colour; the letter uses PRIMARY instead.
+export function build() {
+  return buildMaster({ docDefaults: DOC_DEFAULTS, font: SERIF, styles: STYLES, added: ADDED, sectPr: SECT_PR });
 }
 
-// A patch that matches nothing is the failure mode that produces a plausible-looking
-// but wrong master, so every replacement asserts it fired — the global ones too.
-// One function covers both: a /g regex replaces every hit, a plain one the first.
-function replace(haystack, re, replacement, what) {
-  re.lastIndex = 0;                       // .test() advances lastIndex on /g regexes
-  if (!re.test(haystack)) throw new Error(`patch target not found: ${what}`);
-  re.lastIndex = 0;
-  return haystack.replace(re, () => replacement);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = runMasterGenerator({ name: 'mk-response-letter-reference', out: OUT, build });
 }
 
-function build() {
-  const base = execFileSync('pandoc', ['--print-default-data-file', 'reference.docx'], {
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  const entries = readZip(base);
-  patchEntry(entries, 'word/styles.xml', patchStyles);
-  patchEntry(entries, 'word/document.xml', patchDocument);
-  return entries;
-}
-
-try {
-  execFileSync('pandoc', ['--version'], { stdio: 'ignore' });
-} catch {
-  console.error('mk-response-letter-reference: pandoc not found — it supplies the base reference.docx.');
-  process.exit(2);
-}
-
-const builtEntries = build();
-const rel = path.relative(ROOT, OUT);
-
-function committedEntries() {
-  if (!fs.existsSync(OUT)) return null;
-  try {
-    return readZip(fs.readFileSync(OUT));
-  } catch (e) {
-    console.error(`mk-response-letter-reference: ${rel} is not readable as a .docx — ${e.message}`);
-    process.exit(1);
-  }
-}
-
-const current = committedEntries();
-const matches = current !== null && entriesEqual(current, builtEntries);
-
-if (check) {
-  if (current === null) {
-    console.error(`mk-response-letter-reference: ${rel} is missing — run this script without --check.`);
-    process.exit(1);
-  }
-  if (!matches) {
-    console.error(
-      `mk-response-letter-reference: ${rel} does not match this script.\n` +
-        '  Re-run `node scripts/mk-response-letter-reference.mjs` and commit the result.\n' +
-        '  (A pandoc version change in the base reference.docx can also cause this.)'
-    );
-    const names = new Set([...current.map((e) => e.name), ...builtEntries.map((e) => e.name)]);
-    for (const name of names) {
-      const a = current.find((x) => x.name === name);
-      const b = builtEntries.find((x) => x.name === name);
-      if (!a) console.error(`  only in rebuild: ${name}`);
-      else if (!b) console.error(`  only in committed: ${name}`);
-      else if (!a.data.equals(b.data)) console.error(`  differs: ${name}`);
-    }
-    if (current.length !== builtEntries.length) {
-      console.error(`  part count: committed ${current.length}, rebuilt ${builtEntries.length}`);
-    }
-    process.exit(1);
-  }
-  console.error(`mk-response-letter-reference: committed master matches (${builtEntries.length} parts)`);
-} else if (matches) {
-  console.error(`mk-response-letter-reference: ${rel} already up to date — left unchanged`);
-} else {
-  const buf = writeZip(builtEntries);
-  fs.writeFileSync(OUT, buf);
-  console.error(`mk-response-letter-reference: wrote ${rel} (${buf.length} bytes, ${builtEntries.length} parts)`);
-}
