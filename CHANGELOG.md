@@ -84,11 +84,26 @@ floats stay unnumbered. The numbers are caption text, not Word fields, so there 
 cross-reference fields to them. `filters/responseletter-docx.lua` → 1.2.0,
 `filters/manuscript_include.lua` → 1.0.3.
 
+**`cjk_format` treats a Chinese paragraph as Chinese again.** Closes #17. #14 turned on
+"space after Latin punctuation" only for strings containing a Han character. Pandoc splits
+strings at spaces, so in `中文说明 Hello,world here.` the English part is its own string with
+no Han, and the rule stopped firing in exactly the case it exists for. Han context is now
+decided per paragraph. A heading, table cell, footnote and metadata value each count
+separately. Mixed paragraphs get `Hello, world` again, and all-English paragraphs pass
+through untouched, including their emails, DOIs and bare domains. Inside Chinese text,
+dotted names (`example.org`, `config.yaml`, `U.S.`, `Fig.1`) and times (`10:30`) are no
+longer split. An email glued to Han is now spaced from it (`邮箱ada@example.org是` →
+`邮箱 ada@example.org 是`) without touching the address. `）。` after a DOI and `。` after a
+link stay full-width. A full-width comma in all-English text still becomes `, ` (the space the full-width
+glyph carried is kept); half-width punctuation in all-English text is left as typed. The `demo-obsidian` sample now has a mixed CJK/Latin paragraph, so a golden covers
+this filter for the first time. `filters/cjk_format.lua` → 1.0.2.
+
 Recipes `response-letter` → 1.0.4, `response-letter-docx` → 1.2.0, `paperbell` → 1.0.3,
-`paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.2,
-`pdf` → 1.0.2; bundles `response-letter` → 1.0.6, `response-letter-docx` → 1.2.0,
-`paperbell` → 1.0.4, `paperbell-windows` → 1.0.4, `nature-latex` → 3.0.4,
-`manuscript-obsidian` → 1.3.2, `pdf` → 1.0.3, `full` → 1.0.17.
+`paperbell-windows` → 1.0.3, `nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3,
+`demo-obsidian` → 1.0.2, `pdf` → 1.0.2; bundles `response-letter` → 1.0.6,
+`response-letter-docx` → 1.2.0, `paperbell` → 1.0.4, `paperbell-windows` → 1.0.4,
+`nature-latex` → 3.0.4, `manuscript-obsidian` → 1.3.3, `demo-obsidian` → 1.0.3,
+`pdf` → 1.0.3, `full` → 1.0.18.
 
 ## 1.2.1 — 2026-10-07
 
